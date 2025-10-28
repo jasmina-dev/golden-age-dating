@@ -9,49 +9,49 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Kindred Dating App Design System */
-    /* Warm, nostalgic palette inspired by old-school dating */
+    /* Modern, clean aesthetic emphasizing depth and authenticity */
     
-    /* Primary: Rose background */
-    --background: 353 59% 66%;
-    --foreground: 39 44% 93%;
+    /* Background: Cream (#faf8f5) */
+    --background: 40 50% 97%;
+    --foreground: 345 74% 38%;
     
-    /* Cards: Cream/light backgrounds */
-    --card: 39 44% 93%;
-    --card-foreground: 353 59% 66%;
+    /* Cards: White/light backgrounds on cream */
+    --card: 0 0% 100%;
+    --card-foreground: 345 74% 38%;
     
-    --popover: 39 44% 93%;
-    --popover-foreground: 353 59% 66%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 345 74% 38%;
     
-    /* Primary: Dark Rose for CTAs and hearts */
-    --primary: 345 74% 38%;
-    --primary-foreground: 39 44% 93%;
+    /* Primary: Rose (#dc6874) for primary actions */
+    --primary: 353 62% 66%;
+    --primary-foreground: 0 0% 100%;
     
     /* Secondary: Lighter rose for subtle elements */
-    --secondary: 353 50% 80%;
+    --secondary: 353 50% 85%;
     --secondary-foreground: 345 74% 38%;
     
     /* Muted: Soft neutrals */
-    --muted: 353 30% 85%;
-    --muted-foreground: 353 20% 45%;
+    --muted: 40 30% 92%;
+    --muted-foreground: 345 20% 45%;
     
-    /* Accent: Warm highlights */
-    --accent: 353 59% 66%;
-    --accent-foreground: 39 44% 93%;
+    /* Accent: Deep Red/Maroon (#aa1945) for compatibility scores */
+    --accent: 345 74% 38%;
+    --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 39 44% 93%;
+    --destructive-foreground: 0 0% 100%;
     
-    /* Borders and inputs with warm tones */
-    --border: 353 30% 85%;
-    --input: 39 44% 93%;
-    --ring: 345 74% 38%;
+    /* Borders and inputs */
+    --border: 40 20% 90%;
+    --input: 0 0% 100%;
+    --ring: 353 62% 66%;
     
     /* Rounded, friendly radius */
     --radius: 1rem;
     
     /* Gradients */
-    --gradient-rose: linear-gradient(135deg, hsl(353, 59%, 66%), hsl(345, 74%, 48%));
-    --gradient-warm: linear-gradient(180deg, hsl(353, 59%, 66%), hsl(353, 59%, 60%));
+    --gradient-rose: linear-gradient(135deg, hsl(353, 62%, 66%), hsl(345, 74%, 48%));
+    --gradient-warm: linear-gradient(180deg, hsl(353, 62%, 66%), hsl(353, 62%, 60%));
     
     /* Shadows */
     --shadow-soft: 0 4px 20px hsl(345 74% 38% / 0.15);
@@ -69,5 +69,10 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Pragmatica', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Gotham', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 }

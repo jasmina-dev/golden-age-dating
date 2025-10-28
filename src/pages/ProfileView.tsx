@@ -3,7 +3,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle2, MessageSquare, Gift, MessageCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MessageSquare, Gift, MessageCircle, Heart } from "lucide-react";
 
 const ProfileView = () => {
   const { id } = useParams();
@@ -38,12 +38,13 @@ const ProfileView = () => {
               <h1 className="text-3xl font-black text-card-foreground mb-2">
                 Ben, 29
               </h1>
-              <p className="text-muted-foreground mb-4">3.9a, Austin, TX</p>
+              <p className="text-muted-foreground mb-4">Austin, TX</p>
               
-              {/* Compatibility Badge */}
-              <div className="bg-primary/10 rounded-2xl p-6 text-center mb-4">
-                <div className="text-5xl font-black text-primary mb-2">85%</div>
-                <div className="text-lg font-bold text-card-foreground">Compatible</div>
+              {/* Compatibility Badge - Prominent with Heart */}
+              <div className="bg-accent/5 border-2 border-accent rounded-2xl p-6 text-center mb-4 flex flex-col items-center gap-2">
+                <Heart size={32} className="text-accent fill-accent" />
+                <div className="text-5xl font-black text-accent">85%</div>
+                <div className="text-lg font-bold text-accent">Compatible</div>
               </div>
             </div>
           </div>

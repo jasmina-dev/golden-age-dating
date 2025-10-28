@@ -10,6 +10,7 @@ import Messages from "./pages/Messages";
 import Community from "./pages/Community";
 import Tonight from "./pages/Tonight";
 import Profile from "./pages/Profile";
+import Quiz from "./pages/Quiz";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/community" element={<Community />} />
           <Route path="/tonight" element={<Tonight />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/quiz" element={<Quiz />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
