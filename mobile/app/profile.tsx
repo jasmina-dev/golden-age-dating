@@ -1,10 +1,13 @@
-import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, FlatList } from 'react-native';
+import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import Layout from '@/components/Layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
+import { KindredUser } from '@/constants/UserData';
+import { saveUser, setCurrentUserId, getCurrentUser } from '@/lib/storage';
 
 interface ProfileData {
   name: string;
@@ -36,19 +39,96 @@ const PREDEFINED_INTERESTS = [
   'Surfing',
 ];
 
+// Mock list of US cities and states for location autocomplete
+const US_LOCATIONS = [
+  'Austin, TX',
+  'Portland, OR',
+  'Brooklyn, NY',
+  'Seattle, WA',
+  'San Francisco, CA',
+  'Denver, CO',
+  'Nashville, TN',
+  'Chicago, IL',
+  'Boston, MA',
+  'Los Angeles, CA',
+  'Miami, FL',
+  'Atlanta, GA',
+  'Phoenix, AZ',
+  'Philadelphia, PA',
+  'Dallas, TX',
+  'Houston, TX',
+  'San Diego, CA',
+  'Portland, ME',
+  'Minneapolis, MN',
+  'Detroit, MI',
+  'New Orleans, LA',
+  'Charleston, SC',
+  'Savannah, GA',
+  'Asheville, NC',
+  'Boulder, CO',
+  'Santa Fe, NM',
+  'Madison, WI',
+  'Burlington, VT',
+  'Ann Arbor, MI',
+];
+
 const TOTAL_STEPS = 3;
 
 export default function Profile() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [currentUser, setCurrentUser] = useState<KindredUser | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData>({
     name: '',
     age: '',
     location: '',
     interests: [],
   });
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const locationInputRef = useRef<TextInput>(null);
+
+  // Check if user has a saved profile on mount
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+      setIsEditing(false); // Start in view mode
+    } else {
+      setIsEditing(true); // No profile, start in edit mode
+    }
+  }, []);
 
   const updateProfileData = (field: keyof ProfileData, value: string | string[]) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
+    
+    // Filter location suggestions when location field is updated
+    if (field === 'location' && typeof value === 'string') {
+      filterLocationSuggestions(value);
+    }
+  };
+
+  const filterLocationSuggestions = (query: string) => {
+    if (!query.trim()) {
+      setLocationSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const filtered = US_LOCATIONS.filter((location) =>
+      location.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    setLocationSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  };
+
+  const handleLocationSelect = (location: string) => {
+    updateProfileData('location', location);
+    setShowSuggestions(false);
+    // Dismiss keyboard
+    locationInputRef.current?.blur();
   };
 
   const toggleInterest = (interest: string) => {
@@ -86,18 +166,58 @@ export default function Profile() {
     }
   };
 
-  const handleSave = () => {
+  const handleSaveProfile = () => {
     // Validate interests
     if (profileData.interests.length === 0) {
       return; // Don't save if no interests selected
     }
-    
-    // Save profile data (in a real app, this would call an API)
-    console.log('Saving profile:', profileData);
-    
-    // Navigate to explore or show success message
-    // For now, just log it
-    alert('Profile saved successfully!');
+
+    // Validate all required fields
+    if (!profileData.name.trim() || !profileData.age.trim() || !profileData.location.trim()) {
+      return; // Don't save if required fields are missing
+    }
+
+    // Use existing user ID if editing, otherwise generate new one
+    const userId = currentUser?.id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create or update KindredUser object from the form data
+    const updatedUser: KindredUser = {
+      id: userId,
+      name: profileData.name.trim(),
+      age: parseInt(profileData.age, 10),
+      location: profileData.location.trim(),
+      gender: currentUser?.gender || 'Not specified', // Keep existing gender or use default
+      bio: currentUser?.bio || `Hi, I'm ${profileData.name.trim()}. I love ${profileData.interests.slice(0, 2).join(' and ')}.`, // Keep existing bio or generate new one
+      profileText: currentUser?.profileText || `I'm ${profileData.name.trim()}, ${profileData.age} years old, based in ${profileData.location.trim()}. I'm passionate about ${profileData.interests.join(', ')}. Looking forward to connecting with like-minded people!`, // Keep existing profileText or generate new one
+      interests: profileData.interests,
+      quizAnswers: currentUser?.quizAnswers || {}, // Keep existing quiz answers or use empty object
+    };
+
+    try {
+      // Save or update the user in storage
+      saveUser(updatedUser);
+
+      // Set as current user
+      setCurrentUserId(userId);
+      
+      // Update current user state
+      setCurrentUser(updatedUser);
+      
+      // Switch to view mode
+      setIsEditing(false);
+
+      // Log the user object to console
+      console.log('User profile saved:', updatedUser);
+
+      // Clear the form (but keep data for view)
+      setCurrentStep(1);
+
+      // Navigate to Explore screen
+      router.push('/explore');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save profile. Please try again.');
+    }
   };
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
@@ -106,6 +226,68 @@ export default function Profile() {
     (currentStep === 2 && profileData.location.trim()) ||
     (currentStep === 3 && profileData.interests.length > 0);
 
+  // If user has a saved profile and not editing, show profile view
+  if (currentUser && !isEditing) {
+    return (
+      <Layout>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+          <SafeAreaView edges={['top']} style={styles.safeArea}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>MY PROFILE</Text>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => {
+                  // Load existing data into form for editing
+                  setProfileData({
+                    name: currentUser.name,
+                    age: currentUser.age.toString(),
+                    location: currentUser.location,
+                    interests: currentUser.interests,
+                  });
+                  setCurrentStep(1);
+                  setIsEditing(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <FontAwesome name="edit" size={18} color={Colors.primary} />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Profile Info */}
+            <View style={styles.profileInfo}>
+              <View style={styles.profileCard}>
+                <Text style={styles.profileName}>{currentUser.name}, {currentUser.age}</Text>
+                <Text style={styles.profileLocation}>{currentUser.location}</Text>
+                <Text style={styles.profileBio}>{currentUser.bio}</Text>
+              </View>
+
+              {/* Interests */}
+              <View style={styles.profileCard}>
+                <Text style={styles.sectionTitle}>Interests</Text>
+                <View style={styles.interestsContainer}>
+                  {currentUser.interests.map((interest) => (
+                    <View key={interest} style={styles.interestBadge}>
+                      <Text style={styles.interestText}>{interest}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* About */}
+              <View style={styles.profileCard}>
+                <Text style={styles.sectionTitle}>About</Text>
+                <Text style={styles.profileText}>{currentUser.profileText}</Text>
+              </View>
+            </View>
+          </SafeAreaView>
+        </ScrollView>
+      </Layout>
+    );
+  }
+
+  // Show form for creating/editing profile
   return (
     <Layout>
       <KeyboardAvoidingView
@@ -176,14 +358,47 @@ export default function Profile() {
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Location</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="City, State (e.g., Austin, TX)"
-                    placeholderTextColor={Colors.textLight}
-                    value={profileData.location}
-                    onChangeText={(text) => updateProfileData('location', text)}
-                    autoCapitalize="words"
-                  />
+                  <View style={styles.locationInputContainer}>
+                    <TextInput
+                      ref={locationInputRef}
+                      style={styles.input}
+                      placeholder="City, State (e.g., Austin, TX)"
+                      placeholderTextColor={Colors.textLight}
+                      value={profileData.location}
+                      onChangeText={(text) => updateProfileData('location', text)}
+                      onFocus={() => {
+                        if (profileData.location) {
+                          filterLocationSuggestions(profileData.location);
+                        }
+                      }}
+                      onBlur={() => {
+                        // Delay hiding suggestions to allow click events
+                        setTimeout(() => setShowSuggestions(false), 200);
+                      }}
+                      autoCapitalize="words"
+                    />
+                    {showSuggestions && locationSuggestions.length > 0 && (
+                      <View style={styles.suggestionsContainer}>
+                        <FlatList
+                          data={locationSuggestions}
+                          keyExtractor={(item, index) => `${item}-${index}`}
+                          renderItem={({ item }) => (
+                            <TouchableOpacity
+                              style={styles.suggestionItem}
+                              onPress={() => handleLocationSelect(item)}
+                              activeOpacity={0.7}
+                            >
+                              <FontAwesome name="map-marker" size={16} color={Colors.textLight} style={styles.suggestionIcon} />
+                              <Text style={styles.suggestionText}>{item}</Text>
+                            </TouchableOpacity>
+                          )}
+                          style={styles.suggestionsList}
+                          nestedScrollEnabled={true}
+                          keyboardShouldPersistTaps="handled"
+                        />
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
             )}
@@ -269,7 +484,7 @@ export default function Profile() {
             ) : (
               <TouchableOpacity
                 style={[styles.saveButton, !canProceed && styles.saveButtonDisabled]}
-                onPress={handleSave}
+                onPress={handleSaveProfile}
                 disabled={!canProceed}
                 activeOpacity={0.8}
               >
@@ -486,5 +701,126 @@ const styles = StyleSheet.create({
   },
   saveButtonTextDisabled: {
     color: Colors.textLight,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+  },
+  editButtonText: {
+    fontSize: Typography.body.fontSize.sm,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  profileInfo: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    gap: 16,
+  },
+  profileCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: Colors.border,
+  },
+  profileName: {
+    fontSize: Typography.heading.fontSize.lg,
+    fontWeight: Typography.heading.fontWeight,
+    fontFamily: Typography.heading.fontFamily,
+    color: Colors.text,
+    marginBottom: 8,
+    letterSpacing: Typography.heading.letterSpacing,
+  },
+  profileLocation: {
+    fontSize: Typography.body.fontSize.md,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.textLight,
+    marginBottom: 12,
+  },
+  profileBio: {
+    fontSize: Typography.body.fontSize.md,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.text,
+    lineHeight: Typography.body.lineHeight.md,
+  },
+  sectionTitle: {
+    fontSize: Typography.heading.fontSize.sm,
+    fontWeight: Typography.heading.fontWeight,
+    fontFamily: Typography.heading.fontFamily,
+    color: Colors.text,
+    marginBottom: 12,
+    letterSpacing: Typography.heading.letterSpacing,
+  },
+  profileText: {
+    fontSize: Typography.body.fontSize.md,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.text,
+    lineHeight: Typography.body.lineHeight.md,
+  },
+  interestsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  interestBadge: {
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  interestText: {
+    fontSize: Typography.body.fontSize.sm,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.background,
+    fontWeight: '500',
+  },
+  locationInputContainer: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 4,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  suggestionsList: {
+    maxHeight: 200,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  suggestionIcon: {
+    marginRight: 12,
+  },
+  suggestionText: {
+    fontSize: Typography.body.fontSize.md,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.text,
+    flex: 1,
   },
 });
