@@ -3,9 +3,20 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
+import { useEffect } from 'react';
+import { getCurrentUser } from '@/lib/storage';
 
 export default function Welcome() {
   const router = useRouter();
+
+  // Auto-redirect to explore if user is already signed in
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+      // User is already signed in, redirect to explore
+      router.replace('/explore');
+    }
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, FlatList } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, FlatList, Modal, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import Layout from '@/components/Layout';
@@ -8,6 +8,7 @@ import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { KindredUser } from '@/constants/UserData';
 import { saveUser, setCurrentUserId, getCurrentUser } from '@/lib/storage';
+import { availableQuizzes, Quiz } from '@/constants/Quizzes';
 
 interface ProfileData {
   name: string;
@@ -79,6 +80,11 @@ export default function Profile() {
   const [currentStep, setCurrentStep] = useState(1);
   const [currentUser, setCurrentUser] = useState<KindredUser | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState('about');
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<{ [questionId: string]: string }>({});
   const [profileData, setProfileData] = useState<ProfileData>({
     name: '',
     age: '',
@@ -88,6 +94,8 @@ export default function Profile() {
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const locationInputRef = useRef<TextInput>(null);
+
+  const tabs = ['about', 'quizzes', 'journal', 'vouches'];
 
   // Check if user has a saved profile on mount
   useEffect(() => {
@@ -99,6 +107,66 @@ export default function Profile() {
       setIsEditing(true); // No profile, start in edit mode
     }
   }, []);
+
+  const handleStartQuiz = (quiz: Quiz) => {
+    setSelectedQuiz(quiz);
+    setCurrentQuestionIndex(0);
+    setQuizAnswers({});
+    setShowQuizModal(true);
+  };
+
+  const handleAnswerSelect = (answer: string) => {
+    if (!selectedQuiz) return;
+    const currentQuestion = selectedQuiz.questions[currentQuestionIndex];
+    setQuizAnswers({
+      ...quizAnswers,
+      [currentQuestion.text]: answer,
+    });
+  };
+
+  const handleNextQuestion = () => {
+    if (!selectedQuiz) return;
+    if (currentQuestionIndex < selectedQuiz.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      handleCompleteQuiz();
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  const handleCompleteQuiz = () => {
+    if (!selectedQuiz || !currentUser) return;
+
+    // Merge new quiz answers with existing ones
+    const updatedQuizAnswers = {
+      ...(currentUser.quizAnswers || {}),
+      ...quizAnswers,
+    };
+
+    // Update user profile
+    const updatedUser: KindredUser = {
+      ...currentUser,
+      quizAnswers: updatedQuizAnswers,
+    };
+
+    saveUser(updatedUser);
+    setCurrentUser(updatedUser);
+    setShowQuizModal(false);
+    setSelectedQuiz(null);
+    setCurrentQuestionIndex(0);
+    setQuizAnswers({});
+  };
+
+  const getCurrentAnswer = (): string | null => {
+    if (!selectedQuiz) return null;
+    const currentQuestion = selectedQuiz.questions[currentQuestionIndex];
+    return quizAnswers[currentQuestion.text] || null;
+  };
 
   const updateProfileData = (field: keyof ProfileData, value: string | string[]) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
@@ -255,34 +323,216 @@ export default function Profile() {
               </TouchableOpacity>
             </View>
 
-            {/* Profile Info */}
-            <View style={styles.profileInfo}>
-              <View style={styles.profileCard}>
-                <Text style={styles.profileName}>{currentUser.name}, {currentUser.age}</Text>
-                <Text style={styles.profileLocation}>{currentUser.location}</Text>
-                <Text style={styles.profileBio}>{currentUser.bio}</Text>
+            {/* Tabs */}
+            <View style={styles.tabsContainer}>
+              <View style={styles.tabsList}>
+                {tabs.map((tab) => (
+                  <TouchableOpacity
+                    key={tab}
+                    style={[styles.tab, activeTab === tab && styles.tabActive]}
+                    onPress={() => setActiveTab(tab)}
+                  >
+                    <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
-              {/* Interests */}
-              <View style={styles.profileCard}>
-                <Text style={styles.sectionTitle}>Interests</Text>
-                <View style={styles.interestsContainer}>
-                  {currentUser.interests.map((interest) => (
-                    <View key={interest} style={styles.interestBadge}>
-                      <Text style={styles.interestText}>{interest}</Text>
+              {/* Tab Content */}
+              <View style={styles.tabContent}>
+                {activeTab === 'about' && (
+                  <View style={styles.contentSection}>
+                    <View style={styles.profileCard}>
+                      <Text style={styles.profileName}>{currentUser.name}, {currentUser.age}</Text>
+                      <Text style={styles.profileLocation}>{currentUser.location}</Text>
+                      <Text style={styles.profileBio}>{currentUser.bio}</Text>
                     </View>
-                  ))}
-                </View>
-              </View>
 
-              {/* About */}
-              <View style={styles.profileCard}>
-                <Text style={styles.sectionTitle}>About</Text>
-                <Text style={styles.profileText}>{currentUser.profileText}</Text>
+                    {/* Interests */}
+                    <View style={styles.profileCard}>
+                      <Text style={styles.sectionTitle}>Interests</Text>
+                      <View style={styles.interestsContainer}>
+                        {currentUser.interests.map((interest) => (
+                          <View key={interest} style={styles.interestBadge}>
+                            <Text style={styles.interestText}>{interest}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+
+                    {/* About */}
+                    <View style={styles.profileCard}>
+                      <Text style={styles.sectionTitle}>About</Text>
+                      <Text style={styles.profileText}>{currentUser.profileText}</Text>
+                    </View>
+                  </View>
+                )}
+
+                {activeTab === 'quizzes' && (
+                  <View style={styles.contentSection}>
+                    <Text style={styles.sectionTitle}>Available Quizzes</Text>
+                    {availableQuizzes.map((quiz) => {
+                      const isCompleted = currentUser?.quizAnswers && 
+                        quiz.questions.every((q) => currentUser.quizAnswers[q.text]);
+                      
+                      return (
+                        <TouchableOpacity
+                          key={quiz.id}
+                          style={styles.quizCard}
+                          onPress={() => handleStartQuiz(quiz)}
+                        >
+                          <View style={styles.quizCardHeader}>
+                            <Text style={styles.quizTitle}>{quiz.title}</Text>
+                            {isCompleted && (
+                              <View style={styles.completedBadge}>
+                                <FontAwesome name="check-circle" size={16} color={Colors.primary} />
+                                <Text style={styles.completedText}>Completed</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={styles.quizDescription}>
+                            {quiz.questions.length} questions
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {activeTab === 'journal' && (
+                  <View style={styles.profileCard}>
+                    <Text style={styles.emptyContentText}>Journal entries coming soon...</Text>
+                  </View>
+                )}
+
+                {activeTab === 'vouches' && (
+                  <View style={styles.profileCard}>
+                    <Text style={styles.emptyContentText}>Vouches coming soon...</Text>
+                  </View>
+                )}
               </View>
             </View>
           </SafeAreaView>
         </ScrollView>
+
+        {/* Quiz Modal */}
+        <Modal
+          visible={showQuizModal}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setShowQuizModal(false)}
+        >
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setShowQuizModal(false)}
+          >
+            <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+              {selectedQuiz && (
+                <>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>{selectedQuiz.title}</Text>
+                    <TouchableOpacity
+                      onPress={() => setShowQuizModal(false)}
+                      style={styles.modalCloseButton}
+                    >
+                      <FontAwesome name="times" size={24} color="#000" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.quizProgressContainer}>
+                    <View style={styles.quizProgressBar}>
+                      <View
+                        style={[
+                          styles.quizProgressFill,
+                          {
+                            width: `${((currentQuestionIndex + 1) / selectedQuiz.questions.length) * 100}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.quizProgressText}>
+                      Question {currentQuestionIndex + 1} of {selectedQuiz.questions.length}
+                    </Text>
+                  </View>
+
+                  <ScrollView style={styles.quizContent}>
+                    <Text style={styles.questionText}>
+                      {selectedQuiz.questions[currentQuestionIndex].text}
+                    </Text>
+
+                    <View style={styles.optionsContainer}>
+                      {selectedQuiz.questions[currentQuestionIndex].options.map((option, index) => {
+                        const isSelected = getCurrentAnswer() === option;
+                        return (
+                          <TouchableOpacity
+                            key={index}
+                            style={[
+                              styles.optionButton,
+                              isSelected && styles.optionButtonSelected,
+                            ]}
+                            onPress={() => handleAnswerSelect(option)}
+                          >
+                            <Text
+                              style={[
+                                styles.optionText,
+                                isSelected && styles.optionTextSelected,
+                              ]}
+                            >
+                              {option}
+                            </Text>
+                            {isSelected && (
+                              <FontAwesome name="check-circle" size={20} color={Colors.primary} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+
+                  <View style={styles.modalFooter}>
+                    <TouchableOpacity
+                      style={[
+                        styles.navButton,
+                        currentQuestionIndex === 0 && styles.navButtonDisabled,
+                      ]}
+                      onPress={handlePreviousQuestion}
+                      disabled={currentQuestionIndex === 0}
+                    >
+                      <FontAwesome name="chevron-left" size={16} color={currentQuestionIndex === 0 ? '#999' : '#000'} />
+                      <Text
+                        style={[
+                          styles.navButtonText,
+                          currentQuestionIndex === 0 && styles.navButtonTextDisabled,
+                        ]}
+                      >
+                        Previous
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.quizNextButton,
+                        !getCurrentAnswer() && styles.quizNextButtonDisabled,
+                      ]}
+                      onPress={handleNextQuestion}
+                      disabled={!getCurrentAnswer()}
+                    >
+                      <Text style={styles.quizNextButtonText}>
+                        {currentQuestionIndex === selectedQuiz.questions.length - 1
+                          ? 'Complete'
+                          : 'Next'}
+                      </Text>
+                      {currentQuestionIndex < selectedQuiz.questions.length - 1 && (
+                        <FontAwesome name="chevron-right" size={16} color="#fff" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </Pressable>
+          </Pressable>
+        </Modal>
       </Layout>
     );
   }
@@ -822,5 +1072,219 @@ const styles = StyleSheet.create({
     fontFamily: Typography.body.fontFamily,
     color: Colors.text,
     flex: 1,
+  },
+  tabsContainer: {
+    paddingHorizontal: 24,
+    marginTop: 24,
+  },
+  tabsList: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  tabActive: {
+    backgroundColor: Colors.primary,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+  },
+  tabTextActive: {
+    color: '#fff',
+  },
+  tabContent: {
+    marginBottom: 100,
+  },
+  contentSection: {
+    gap: 16,
+  },
+  emptyContentText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+    padding: 24,
+  },
+  quizCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  quizCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  quizTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    flex: 1,
+  },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  completedText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  quizDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  quizProgressContainer: {
+    marginBottom: 24,
+  },
+  quizProgressBar: {
+    height: 4,
+    backgroundColor: '#e5e5e5',
+    borderRadius: 2,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  quizProgressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: 2,
+  },
+  quizProgressText: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+  },
+  quizContent: {
+    flex: 1,
+    marginBottom: 24,
+  },
+  questionText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 24,
+    lineHeight: 28,
+  },
+  optionsContainer: {
+    gap: 12,
+  },
+  optionButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  optionButtonSelected: {
+    backgroundColor: 'rgba(220, 104, 116, 0.15)',
+    borderColor: Colors.primary,
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    flex: 1,
+  },
+  optionTextSelected: {
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5e5',
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  navButtonDisabled: {
+    opacity: 0.5,
+  },
+  navButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  navButtonTextDisabled: {
+    color: '#999',
+  },
+  quizNextButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  quizNextButtonDisabled: {
+    backgroundColor: '#e5e5e5',
+    opacity: 0.5,
+  },
+  quizNextButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

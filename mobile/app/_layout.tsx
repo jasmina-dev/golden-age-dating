@@ -8,6 +8,8 @@ import 'react-native-reanimated';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { getCurrentUser, setCurrentUserId, saveUser } from '@/lib/storage';
+import { sampleUserData } from '@/constants/UserData';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -50,6 +52,29 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+
+  // Auto-sign-in for testing: automatically sign in as a test user if no user is logged in
+  useEffect(() => {
+    const initializeTestUser = () => {
+      const currentUser = getCurrentUser();
+      
+      // Only auto-sign-in if no user is currently logged in
+      if (!currentUser) {
+        // Use the first sample user (David) as the test user
+        const testUser = sampleUserData[0];
+        
+        // Save the test user to storage
+        saveUser(testUser);
+        
+        // Set as current user
+        setCurrentUserId(testUser.id);
+        
+        console.log('Auto-signed in as test user:', testUser.name);
+      }
+    };
+
+    initializeTestUser();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

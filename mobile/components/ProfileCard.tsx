@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 
@@ -17,6 +17,7 @@ export default function ProfileCard({
   age,
   compatibility,
   interests,
+  image,
   verified = true,
   onClick,
 }: ProfileCardProps) {
@@ -26,8 +27,17 @@ export default function ProfileCard({
       onPress={onClick}
       activeOpacity={0.9}
     >
-      {/* Profile Image Placeholder */}
+      {/* Profile Image */}
       <View style={styles.imageContainer}>
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            style={styles.profileImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.profileImagePlaceholder} />
+        )}
         {verified && (
           <View style={styles.verifiedBadge}>
             <FontAwesome name="check-circle" size={16} color="#000" />
@@ -41,9 +51,9 @@ export default function ProfileCard({
           {name}, {age}
         </Text>
 
-        {/* Compatibility Badge */}
+        {/* Compatibility Badge - Prominently displayed with primary brand color */}
         <View style={styles.compatibilityBadge}>
-          <FontAwesome name="heart" size={20} color={Colors.secondary} />
+          <FontAwesome name="heart" size={20} color={Colors.primary} />
           <Text style={styles.compatibilityText}>{compatibility}%</Text>
           <Text style={styles.kindredText}>Kindred Match</Text>
         </View>
@@ -89,6 +99,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 16,
     position: 'relative',
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  profileImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f0f0f0',
   },
   verifiedBadge: {
     position: 'absolute',
@@ -111,21 +131,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(220, 104, 116, 0.15)', // Primary color with 15% opacity
     borderWidth: 2,
-    borderColor: Colors.secondary,
+    borderColor: Colors.primary,
     borderRadius: 16,
     padding: 16,
   },
   compatibilityText: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#000',
+    color: Colors.primary,
   },
   kindredText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.primary,
   },
   interestsContainer: {
     flexDirection: 'row',
