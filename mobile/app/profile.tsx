@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, FlatList, Modal, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, FlatList, Modal, Pressable, Share } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import Layout from '@/components/Layout';
@@ -9,6 +9,7 @@ import { Typography } from '@/constants/Typography';
 import { KindredUser } from '@/constants/UserData';
 import { saveUser, setCurrentUserId, getCurrentUser } from '@/lib/storage';
 import { availableQuizzes, Quiz } from '@/constants/Quizzes';
+import { getApprovedVouchesByUserId } from '@/constants/Vouches';
 
 interface ProfileData {
   name: string;
@@ -94,8 +95,9 @@ export default function Profile() {
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const locationInputRef = useRef<TextInput>(null);
+  const [approvedVouches, setApprovedVouches] = useState<any[]>([]);
 
-  const tabs = ['about', 'quizzes', 'journal', 'vouches'];
+  const tabs = ['about', 'quizzes', 'journal'];
 
   // Check if user has a saved profile on mount
   useEffect(() => {
@@ -103,6 +105,9 @@ export default function Profile() {
     if (user) {
       setCurrentUser(user);
       setIsEditing(false); // Start in view mode
+      // Load approved vouches for the user
+      const userVouches = getApprovedVouchesByUserId(user.id);
+      setApprovedVouches(userVouches);
     } else {
       setIsEditing(true); // No profile, start in edit mode
     }
@@ -166,6 +171,27 @@ export default function Profile() {
     if (!selectedQuiz) return null;
     const currentQuestion = selectedQuiz.questions[currentQuestionIndex];
     return quizAnswers[currentQuestion.text] || null;
+  };
+
+  const handleGetVouched = async () => {
+    if (!currentUser) return;
+
+    const vouchLink = `/vouch/${currentUser.id}`;
+    const shareMessage = `Hey, I need a wingman. Write a vouch for my dating profile? ${vouchLink}`;
+
+    try {
+      const result = await Share.share({
+        message: shareMessage,
+        title: 'Get Vouched',
+      });
+
+      if (result.action === Share.sharedAction) {
+        console.log('Vouch link shared successfully');
+      }
+    } catch (error) {
+      console.error('Error sharing vouch link:', error);
+      Alert.alert('Error', 'Failed to share link. Please try again.');
+    }
   };
 
   const updateProfileData = (field: keyof ProfileData, value: string | string[]) => {
@@ -323,6 +349,54 @@ export default function Profile() {
               </TouchableOpacity>
             </View>
 
+            {/* Vouches Section - Pinned to Top */}
+            <View style={styles.pinnedVouchesSection}>
+              {approvedVouches.length > 0 ? (
+                approvedVouches.map((vouch) => (
+                  <View key={vouch.id} style={styles.vouchCard}>
+                    <View style={styles.vouchHeader}>
+                      <View style={styles.vouchHeaderLeft}>
+                        <FontAwesome name="check-circle" size={18} color="#D4AF37" />
+                        <Text style={styles.vouchFriendName}>Vouched by {vouch.friendName}</Text>
+                      </View>
+                      <View style={styles.approvedBadge}>
+                        <FontAwesome name="check-circle" size={14} color={Colors.primary} />
+                        <Text style={styles.approvedText}>Approved</Text>
+                      </View>
+                    </View>
+                    <View style={styles.vouchContent}>
+                      <View style={styles.vouchSection}>
+                        <Text style={styles.vouchLabel}>Green Flag</Text>
+                        <Text style={styles.vouchAnswer}>{vouch.greenFlag}</Text>
+                      </View>
+                      <View style={styles.vouchSection}>
+                        <Text style={styles.vouchLabel}>Hidden Talent</Text>
+                        <Text style={styles.vouchAnswer}>{vouch.hiddenTalent}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.emptyStateCard}>
+                  <View style={styles.emptyStateIcon}>
+                    <FontAwesome name="heart" size={48} color={Colors.primary} />
+                  </View>
+                  <Text style={styles.emptyStateTitle}>No vouches yet</Text>
+                  <Text style={styles.emptyStateText}>
+                    Your friends know you best. Get them to hype you up.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.getVouchedButton}
+                    onPress={handleGetVouched}
+                    activeOpacity={0.8}
+                  >
+                    <FontAwesome name="share" size={18} color="#fff" />
+                    <Text style={styles.getVouchedButtonText}>Get Vouched</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
             {/* Tabs */}
             <View style={styles.tabsContainer}>
               <View style={styles.tabsList}>
@@ -403,12 +477,6 @@ export default function Profile() {
                 {activeTab === 'journal' && (
                   <View style={styles.profileCard}>
                     <Text style={styles.emptyContentText}>Journal entries coming soon...</Text>
-                  </View>
-                )}
-
-                {activeTab === 'vouches' && (
-                  <View style={styles.profileCard}>
-                    <Text style={styles.emptyContentText}>Vouches coming soon...</Text>
                   </View>
                 )}
               </View>
@@ -1073,6 +1141,12 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flex: 1,
   },
+  pinnedVouchesSection: {
+    paddingHorizontal: 24,
+    marginTop: 24,
+    marginBottom: 8,
+    gap: 16,
+  },
   tabsContainer: {
     paddingHorizontal: 24,
     marginTop: 24,
@@ -1286,5 +1360,146 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  vouchesContainer: {
+    gap: 16,
+  },
+  emptyStateCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+  },
+  emptyStateIcon: {
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: Typography.heading.fontSize.md,
+    fontWeight: Typography.heading.fontWeight,
+    fontFamily: Typography.heading.fontFamily,
+    color: Colors.text,
+    marginBottom: 8,
+    letterSpacing: Typography.heading.letterSpacing,
+  },
+  emptyStateText: {
+    fontSize: Typography.body.fontSize.md,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.textLight,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: Typography.body.lineHeight.md,
+  },
+  getVouchedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  getVouchedButtonText: {
+    fontSize: Typography.body.fontSize.md,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.background,
+    fontWeight: '700',
+  },
+  vouchesList: {
+    gap: 16,
+  },
+  vouchCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: Colors.border,
+  },
+  vouchHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  vouchHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  vouchFriendName: {
+    fontSize: Typography.heading.fontSize.sm,
+    fontWeight: Typography.heading.fontWeight,
+    fontFamily: Typography.heading.fontFamily,
+    color: Colors.text,
+    letterSpacing: Typography.heading.letterSpacing,
+  },
+  approvedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(220, 104, 116, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  approvedText: {
+    fontSize: Typography.body.fontSize.xs,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  pendingBadge: {
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  pendingText: {
+    fontSize: Typography.body.fontSize.xs,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.textLight,
+    fontWeight: '600',
+  },
+  vouchContent: {
+    gap: 16,
+  },
+  vouchSection: {
+    gap: 8,
+  },
+  vouchLabel: {
+    fontSize: Typography.body.fontSize.sm,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '600',
+    color: Colors.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  vouchAnswer: {
+    fontSize: Typography.body.fontSize.md,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.text,
+    lineHeight: Typography.body.lineHeight.md,
+  },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(220, 104, 116, 0.1)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderStyle: 'dashed',
+  },
+  testButtonText: {
+    fontSize: Typography.body.fontSize.sm,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.primary,
+    fontWeight: '600',
   },
 });

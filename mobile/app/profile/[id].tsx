@@ -10,6 +10,7 @@ import { availableQuizzes, Quiz, QuizQuestion } from '@/constants/Quizzes';
 import { getCurrentUser, saveUser, getUserById } from '@/lib/storage';
 import { KindredUser, sampleUserData } from '@/constants/UserData';
 import { getPostsByUserId, CommunityPost } from '@/constants/CommunityPosts';
+import { getApprovedVouchesByUserId, Vouch } from '@/constants/Vouches';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CONTAINER_PADDING = 24;
@@ -60,8 +61,10 @@ export default function ProfileView() {
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<{ [questionId: string]: string }>({});
+  const [approvedVouches, setApprovedVouches] = useState<Vouch[]>([]);
+  const [allApprovedVouches, setAllApprovedVouches] = useState<Vouch[]>([]);
 
-  const tabs = ['about', 'quizzes', 'journal', 'vouches'];
+  const tabs = ['about', 'quizzes', 'journal'];
 
   // Load profile data
   useEffect(() => {
@@ -84,6 +87,14 @@ export default function ProfileView() {
       if (loggedInUser && id === loggedInUser.id) {
         setIsOwnProfile(true);
         setViewedProfile(loggedInUser);
+      }
+
+      // Load approved vouches for this profile
+      if (profile) {
+        // Get all approved vouches to display at the top
+        const allVouches = getApprovedVouchesByUserId(profile.id);
+        setApprovedVouches(allVouches);
+        setAllApprovedVouches(allVouches);
       }
     }
   }, [id]);
@@ -280,6 +291,36 @@ export default function ProfileView() {
             </View>
           </View>
         </View>
+
+        {/* Vouches Section - Pinned to Top */}
+        {approvedVouches.length > 0 && (
+          <View style={styles.pinnedVouchesSection}>
+            {approvedVouches.map((vouch) => (
+              <View key={vouch.id} style={styles.vouchCard}>
+                <View style={styles.vouchHeader}>
+                  <View style={styles.vouchHeaderLeft}>
+                    <FontAwesome name="check-circle" size={18} color="#D4AF37" />
+                    <Text style={styles.vouchFriendName}>Vouched by {vouch.friendName}</Text>
+                  </View>
+                  <View style={styles.approvedBadge}>
+                    <FontAwesome name="check-circle" size={14} color={Colors.primary} />
+                    <Text style={styles.approvedText}>Approved</Text>
+                  </View>
+                </View>
+                <View style={styles.vouchContent}>
+                  <View style={styles.vouchSection}>
+                    <Text style={styles.vouchLabel}>Green Flag</Text>
+                    <Text style={styles.vouchAnswer}>{vouch.greenFlag}</Text>
+                  </View>
+                  <View style={styles.vouchSection}>
+                    <Text style={styles.vouchLabel}>Hidden Talent</Text>
+                    <Text style={styles.vouchAnswer}>{vouch.hiddenTalent}</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>
@@ -501,11 +542,6 @@ export default function ProfileView() {
               </View>
             )}
 
-            {activeTab === 'vouches' && (
-              <View style={styles.contentCard}>
-                <Text style={styles.emptyContentText}>Vouches coming soon...</Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -723,6 +759,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: Colors.primary,
+  },
+  pinnedVouchesSection: {
+    paddingHorizontal: 24,
+    marginTop: 24,
+    marginBottom: 8,
+    gap: 16,
   },
   tabsContainer: {
     paddingHorizontal: 24,
@@ -1190,6 +1232,128 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: Colors.textMuted,
     fontFamily: Typography.body.fontFamily,
+  },
+  vouchesSection: {
+    marginTop: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  verifiedReviewCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#D4AF37', // Gold border
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  verifiedReviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  verifiedReviewBadge: {
+    fontSize: Typography.body.fontSize.sm,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '700',
+    color: '#D4AF37',
+  },
+  verifiedReviewContent: {
+    gap: 16,
+  },
+  verifiedReviewItem: {
+    gap: 8,
+  },
+  verifiedReviewLabel: {
+    fontSize: Typography.body.fontSize.xs,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '600',
+    color: Colors.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  verifiedReviewText: {
+    fontSize: Typography.body.fontSize.md,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.text,
+    lineHeight: Typography.body.lineHeight.md,
+    fontWeight: '500',
+  },
+  vouchesTabContainer: {
+    gap: 16,
+  },
+  vouchesList: {
+    gap: 16,
+  },
+  vouchCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#e5e5e5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  vouchHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  vouchHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  vouchFriendName: {
+    fontSize: Typography.heading.fontSize.sm,
+    fontWeight: Typography.heading.fontWeight,
+    fontFamily: Typography.heading.fontFamily,
+    color: Colors.text,
+    letterSpacing: Typography.heading.letterSpacing,
+  },
+  approvedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(220, 104, 116, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  approvedText: {
+    fontSize: Typography.body.fontSize.xs,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  vouchContent: {
+    gap: 16,
+  },
+  vouchSection: {
+    gap: 8,
+  },
+  vouchLabel: {
+    fontSize: Typography.body.fontSize.sm,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '600',
+    color: Colors.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  vouchAnswer: {
+    fontSize: Typography.body.fontSize.md,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.text,
+    lineHeight: Typography.body.lineHeight.md,
   },
 });
 
