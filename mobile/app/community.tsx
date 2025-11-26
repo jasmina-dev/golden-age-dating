@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.heading.fontSize.lg,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     marginBottom: 32,
@@ -121,7 +120,6 @@ const styles = StyleSheet.create({
   },
   promptText: {
     fontSize: Typography.heading.fontSize.sm,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.background,
     textAlign: 'center',
@@ -167,7 +165,6 @@ const styles = StyleSheet.create({
   },
   postUserName: {
     fontSize: Typography.heading.fontSize.xs,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     letterSpacing: Typography.heading.letterSpacing,

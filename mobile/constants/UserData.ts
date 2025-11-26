@@ -1,3 +1,10 @@
+// Polaroid Image Structure
+export interface PolaroidImage {
+  id: string;
+  imageUrl: string;
+  label: string; // e.g., "Hiking in the alps."
+}
+
 // Kindred User Data Structure
 export interface KindredUser {
   id: string;
@@ -9,6 +16,7 @@ export interface KindredUser {
   profileText: string; // Long string for 'Depth' section
   interests: string[]; // Array of at least 3 strings
   imageUrl?: string; // Profile image URL
+  polaroidImages?: PolaroidImage[]; // Array of polaroid images with labels
   quizAnswers: {
     [key: string]: string; // Key-value pairs for compatibility quiz answers
   };
@@ -26,6 +34,28 @@ export const sampleUserData: KindredUser[] = [
     profileText: 'My perfect Sunday starts with a long hike through the greenbelt, followed by a few hours in my studio throwing pots. There\'s something meditative about working with clay—the way it responds to your touch, the patience required. In the evening, I love cooking something new from a cookbook I\'ve been meaning to try, usually with a good playlist in the background. I\'m drawn to people who value authenticity over perfection, who can laugh at themselves, and who understand that the best relationships are built on mutual respect and genuine curiosity about each other\'s inner worlds. I believe in showing up fully, in being present, and in creating space for both joy and vulnerability.',
     interests: ['Hiking', 'Ceramics', 'Cooking', 'Indie Films', 'Philosophy'],
     imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1200&fit=crop&crop=faces',
+    polaroidImages: [
+      {
+        id: '1',
+        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop',
+        label: 'Hiking in the alps.',
+      },
+      {
+        id: '2',
+        imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&h=800&fit=crop',
+        label: 'Ceramics workshop.',
+      },
+      {
+        id: '3',
+        imageUrl: 'https://images.unsplash.com/photo-1556910103-2c727e88e5d4?w=600&h=800&fit=crop',
+        label: 'Sunday morning cooking.',
+      },
+      {
+        id: '4',
+        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop',
+        label: 'Mountain view.',
+      },
+    ],
     quizAnswers: {
       'Would you move for love?': 'Maybe, for the right person',
       'How do you handle conflict in relationships?': 'Take time to think, then discuss',
@@ -332,6 +362,28 @@ export const sampleUserData: KindredUser[] = [
     profileText: 'I\'m a ceramic artist with a studio here in Austin. Working with clay is meditative for me—there\'s something about the process that grounds me and helps me stay present. I love hiking, especially in the greenbelt, and I often find inspiration for my work in nature. Cooking is another creative outlet, and I love the process of creating something beautiful and nourishing. I enjoy reading, especially books about art, creativity, and philosophy. I\'m drawn to people who value authenticity, who appreciate the creative process, and who understand that relationships are about supporting each other\'s growth. I believe in showing up fully, in being present, and in creating space for both creativity and connection.',
     interests: ['Ceramics', 'Hiking', 'Cooking', 'Indie Films', 'Philosophy'],
     imageUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&h=1200&fit=crop&crop=faces',
+    polaroidImages: [
+      {
+        id: '1',
+        imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&h=800&fit=crop',
+        label: 'Working with clay.',
+      },
+      {
+        id: '2',
+        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop',
+        label: 'Hiking in the greenbelt.',
+      },
+      {
+        id: '3',
+        imageUrl: 'https://images.unsplash.com/photo-1556910103-2c727e88e5d4?w=600&h=800&fit=crop',
+        label: 'Sunday morning pottery.',
+      },
+      {
+        id: '4',
+        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=800&fit=crop',
+        label: 'Cooking with fresh ingredients.',
+      },
+    ],
     quizAnswers: {
       'Would you move for love?': 'Maybe, for the right person',
       'How do you handle conflict in relationships?': 'Take time to think, then discuss',
@@ -350,6 +402,28 @@ export const sampleUserData: KindredUser[] = [
     profileText: 'I write about films for a living, which means I spend a lot of time watching indie films and thinking about what makes a story resonate. Philosophy has always fascinated me—I love exploring big questions about meaning, existence, and how we connect with each other. Hiking is my way of clearing my head and staying grounded. I enjoy cooking, especially trying new recipes that tell a story. I\'m looking for someone who values intellectual curiosity, who appreciates the arts, and who understands that the best relationships are built on shared interests and mutual respect. I believe in being authentic, in pursuing what you love, and in building connections that have depth and meaning.',
     interests: ['Indie Films', 'Philosophy', 'Hiking', 'Cooking', 'Ceramics'],
     imageUrl: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&h=1200&fit=crop&crop=faces',
+    polaroidImages: [
+      {
+        id: '1',
+        imageUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=800&fit=crop',
+        label: 'Film festival night.',
+      },
+      {
+        id: '2',
+        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop',
+        label: 'Mountain trail thoughts.',
+      },
+      {
+        id: '3',
+        imageUrl: 'https://images.unsplash.com/photo-1556910103-2c727e88e5d4?w=600&h=800&fit=crop',
+        label: 'Cooking with friends.',
+      },
+      {
+        id: '4',
+        imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&h=800&fit=crop',
+        label: 'Ceramics workshop.',
+      },
+    ],
     quizAnswers: {
       'Would you move for love?': 'Maybe, for the right person',
       'How do you handle conflict in relationships?': 'Take time to think, then discuss',

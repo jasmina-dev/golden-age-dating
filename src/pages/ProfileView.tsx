@@ -30,6 +30,12 @@ const ProfileView = () => {
             <div className="absolute top-6 right-6 bg-primary rounded-full p-2">
               <CheckCircle2 size={20} className="text-primary-foreground" />
             </div>
+            
+            {/* Compatibility Score Overlay */}
+            <div className="absolute bottom-6 right-6 bg-black/60 backdrop-blur-sm rounded-xl px-3 py-1.5 flex items-center gap-2">
+              <Heart size={16} className="text-accent fill-accent" />
+              <span className="text-lg font-black text-accent">85%</span>
+            </div>
           </div>
 
           {/* Profile Info */}
@@ -39,13 +45,6 @@ const ProfileView = () => {
                 Ben, 29
               </h1>
               <p className="text-muted-foreground mb-4">Austin, TX</p>
-              
-              {/* Compatibility Badge - Prominent with Heart */}
-              <div className="bg-accent/5 border-2 border-accent rounded-2xl p-6 text-center mb-4 flex flex-col items-center gap-2">
-                <Heart size={32} className="text-accent fill-accent" />
-                <div className="text-5xl font-black text-accent">85%</div>
-                <div className="text-lg font-bold text-accent">Compatible</div>
-              </div>
             </div>
           </div>
         </div>

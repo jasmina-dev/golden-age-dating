@@ -287,7 +287,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: Typography.body.fontSize.md,
     fontFamily: Typography.body.fontFamily,
-    fontWeight: '700',
     color: Colors.text,
   },
   input: {
@@ -322,7 +321,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.md,
     fontFamily: Typography.body.fontFamily,
     color: Colors.background,
-    fontWeight: '700',
   },
   successCard: {
     backgroundColor: Colors.card,
@@ -342,7 +340,6 @@ const styles = StyleSheet.create({
   },
   successHeadline: {
     fontSize: Typography.heading.fontSize.lg,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     textAlign: 'center',
@@ -368,7 +365,6 @@ const styles = StyleSheet.create({
   },
   viralTitle: {
     fontSize: Typography.heading.fontSize.sm,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     textAlign: 'center',
@@ -395,7 +391,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
     color: Colors.background,
-    fontWeight: '700',
   },
 });
 

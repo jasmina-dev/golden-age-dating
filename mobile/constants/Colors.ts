@@ -1,45 +1,45 @@
-// Color Palette - Sunset & Sand: Friendly, Approachable, Vibrant
-// Warm gradients with fresh accents for a unisex, balanced design
+// Color Palette - Dark Pink & Light Pink: Matching the design image
+// Pink/rose background (#dc6874) with pink accents
 export const Colors = {
-  // Primary: Soft Coral to Warm Peach gradient
-  // Used for primary buttons and active states
-  primary: '#FF8A80', // Soft Coral
-  primaryGradient: ['#FF8A80', '#FFB74D'], // Soft Coral to Warm Peach
-  coral: '#FF8A80', // Soft Coral
-  peach: '#FFB74D', // Warm Peach
+  // Primary: Dark Pink (for hearts, filter text, accents)
+  primary: '#D81B60', // Dark Pink
+  primaryGradient: ['#D81B60', '#E91E63'], // Dark Pink gradient
+  darkPink: '#D81B60', // Dark Pink
+  coral: '#D81B60', // Dark Pink (alias)
   
-  // Secondary: Soft Teal or Sage Green for secondary elements
-  secondary: '#80CBC4', // Soft Teal
-  sage: '#A5D6A7', // Sage Green (alternative)
-  teal: '#80CBC4', // Soft Teal
+  // Secondary: Light Pink (for input fields)
+  secondary: '#F8BBD0', // Light Pink
+  lightPink: '#F8BBD0', // Light Pink
+  peach: '#F8BBD0', // Light Pink (alias)
   
-  // Background: Light, airy backgrounds
-  background: '#FFF8F5', // Warm off-white (sand tone)
+  // Background: Pink/Rose
+  background: '#dc6874', // Pink/rose background
   card: '#FFFFFF', // Pure white for cards
-  overlay: 'rgba(255, 255, 255, 0.85)', // White overlay for glassmorphism
+  overlay: 'rgba(0, 0, 0, 0.5)', // Dark overlay
   
-  // Text colors: Dark for readability on light backgrounds
-  text: '#2C2C2C', // Dark gray for main text
-  textMuted: '#6B6B6B', // Medium gray
-  textLight: '#999999', // Light gray for placeholders
+  // Text colors: White for dark backgrounds
+  text: '#FFFFFF', // White text
+  textMuted: '#CCCCCC', // Light gray
+  textLight: '#999999', // Medium gray for placeholders
+  textDark: '#D81B60', // Dark pink text (for filter tags)
   
   // Borders and shadows
-  border: '#E8E4DD', // Soft beige border
-  shadow: 'rgba(0, 0, 0, 0.1)', // Soft shadow
+  border: '#E0E0E0', // Light border
+  shadow: 'rgba(0, 0, 0, 0.3)', // Dark shadow
   
-  // Accent colors for specific use cases
-  accent: '#FF8A80', // Same as primary/coral
-  vouchAccent: '#80CBC4', // Soft Teal for vouched badges
-  gold: '#D4A561', // Metallic muted gold (champagne gold)
+  // Accent colors
+  accent: '#D81B60', // Dark Pink
+  vouchAccent: '#D81B60', // Dark Pink for vouched badges
+  gold: '#D81B60', // Dark Pink (alias)
   
-  // Navigation bar colors (glassmorphism)
-  navBarBackground: 'rgba(255, 255, 255, 0.9)', // Frosted white glass
-  navBarBorder: 'rgba(255, 255, 255, 0.3)',
+  // Navigation bar colors
+  navBarBackground: '#dc6874', // Pink/rose background
+  navBarBorder: 'rgba(255, 255, 255, 0.1)',
   
-  // Category bubble gradients (pastel, playful)
-  gradient1: ['#FFB3BA', '#FFDFBA'], // Pink to Peach
-  gradient2: ['#BAFFC9', '#BAE1FF'], // Mint to Sky Blue
-  gradient3: ['#FFFFBA', '#FFD1DC'], // Yellow to Pink
-  gradient4: ['#D4A5FF', '#FFA5D4'], // Purple to Pink
-  gradient5: ['#A5FFD4', '#A5D4FF'], // Mint to Blue
+  // Category bubble gradients (not used in new design)
+  gradient1: ['#D81B60', '#E91E63'], // Dark Pink gradient
+  gradient2: ['#D81B60', '#E91E63'],
+  gradient3: ['#D81B60', '#E91E63'],
+  gradient4: ['#D81B60', '#E91E63'],
+  gradient5: ['#D81B60', '#E91E63'],
 };

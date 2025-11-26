@@ -1,15 +1,15 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, FlatList, Dimensions, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, FlatList, Dimensions, Image, PanResponder, Animated, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Layout from '@/components/Layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { availableQuizzes, Quiz, QuizQuestion } from '@/constants/Quizzes';
 import { getCurrentUser, saveUser, getUserById } from '@/lib/storage';
-import { KindredUser, sampleUserData } from '@/constants/UserData';
+import { KindredUser, sampleUserData, PolaroidImage } from '@/constants/UserData';
 import { getPostsByUserId, CommunityPost } from '@/constants/CommunityPosts';
 import { getApprovedVouchesByUserId, Vouch } from '@/constants/Vouches';
 
@@ -64,6 +64,12 @@ export default function ProfileView() {
   const [quizAnswers, setQuizAnswers] = useState<{ [questionId: string]: string }>({});
   const [approvedVouches, setApprovedVouches] = useState<Vouch[]>([]);
   const [allApprovedVouches, setAllApprovedVouches] = useState<Vouch[]>([]);
+  
+  // Polaroid stack state
+  const [polaroidStack, setPolaroidStack] = useState<PolaroidImage[]>([]);
+  const panResponders = useRef<any[]>([]);
+  const panValues = useRef<Animated.ValueXY[]>([]);
+  const rotationValues = useRef<Animated.Value[]>([]);
 
   const tabs = ['about', 'quizzes', 'journal'];
 
@@ -96,9 +102,161 @@ export default function ProfileView() {
         const allVouches = getApprovedVouchesByUserId(profile.id);
         setApprovedVouches(allVouches);
         setAllApprovedVouches(allVouches);
+        
+        // Initialize polaroid stack
+        if (profile.polaroidImages && profile.polaroidImages.length > 0) {
+          setPolaroidStack([...profile.polaroidImages]);
+        } else {
+          setPolaroidStack([]);
+        }
       }
     }
   }, [id]);
+  
+  // Initialize pan values and rotation values when polaroid stack changes
+  useEffect(() => {
+    if (polaroidStack.length === 0) return;
+    
+    // Ensure we have the right number of animated values
+    while (panValues.current.length < polaroidStack.length) {
+      panValues.current.push(new Animated.ValueXY({ x: 0, y: 0 }));
+      rotationValues.current.push(new Animated.Value(0));
+    }
+    
+    // Reset all values to initial state
+    panValues.current.forEach((val, idx) => {
+      if (idx === 0) {
+        // Top polaroid should be at center
+        val.setValue({ x: 0, y: 0 });
+      } else {
+        // Stacked polaroids have offset positions
+        const baseX = (idx % 2 === 0 ? 1 : -1) * (10 + idx * 5);
+        const baseY = idx * 5;
+        val.setValue({ x: baseX, y: baseY });
+      }
+    });
+    
+    rotationValues.current.forEach((val, idx) => {
+      if (idx === 0) {
+        val.setValue(0);
+      } else {
+        const baseRotation = (idx % 2 === 0 ? 1 : -1) * (3 + idx * 2);
+        val.setValue(baseRotation);
+      }
+    });
+  }, [polaroidStack.length]);
+  
+  // Create pan responders for swipe functionality using useMemo
+  // This ensures responders are created during render phase, ready immediately when View needs them
+  const panRespondersMemo = useMemo(() => {
+    if (polaroidStack.length === 0 || panValues.current.length === 0) {
+      return [];
+    }
+    
+    return polaroidStack.map((_, index) => {
+      // Only the top polaroid (index 0) should be swipeable
+      if (index !== 0) {
+        return null;
+      }
+      
+      return PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (evt, gestureState) => {
+          // Only respond to significant movement
+          return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+        },
+        onPanResponderGrant: () => {
+          // Reset any ongoing animations
+          if (panValues.current[index]) {
+            panValues.current[index].stopAnimation();
+          }
+          if (rotationValues.current[index]) {
+            rotationValues.current[index].stopAnimation();
+          }
+        },
+        onPanResponderMove: (evt, gestureState) => {
+          if (panValues.current[index] && rotationValues.current[index]) {
+            panValues.current[index].setValue({
+              x: gestureState.dx,
+              y: gestureState.dy,
+            });
+            // Add rotation based on horizontal movement (more pronounced)
+            rotationValues.current[index].setValue(gestureState.dx / 8);
+          }
+        },
+        onPanResponderRelease: (evt, gestureState) => {
+          if (!panValues.current[index] || !rotationValues.current[index]) return;
+          
+          const SWIPE_THRESHOLD = 80;
+          const velocity = Math.sqrt(gestureState.vx * gestureState.vx + gestureState.vy * gestureState.vy);
+          
+          // Check if swipe is significant enough (distance or velocity)
+          if (Math.abs(gestureState.dx) > SWIPE_THRESHOLD || 
+              Math.abs(gestureState.dy) > SWIPE_THRESHOLD ||
+              velocity > 0.5) {
+            // Swipe detected - animate to edge and then send to back
+            const screenWidth = Dimensions.get('window').width;
+            const exitX = gestureState.dx > 0 ? screenWidth + 300 : -screenWidth - 300;
+            const exitY = gestureState.dy + gestureState.vy * 100;
+            
+            Animated.parallel([
+              Animated.timing(panValues.current[index], {
+                toValue: { x: exitX, y: exitY },
+                duration: 300,
+                useNativeDriver: true,
+              }),
+              Animated.timing(rotationValues.current[index], {
+                toValue: gestureState.dx > 0 ? 30 : -30,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              // After animation completes, send to back
+              const newStack = [...polaroidStack];
+              const topPolaroid = newStack.shift();
+              if (topPolaroid) {
+                newStack.push(topPolaroid);
+                setPolaroidStack(newStack);
+                
+                // Reorder pan values and rotation values
+                const panValue = panValues.current.shift();
+                const rotationValue = rotationValues.current.shift();
+                if (panValue) {
+                  panValue.setValue({ x: 0, y: 0 });
+                  panValues.current.push(panValue);
+                }
+                if (rotationValue) {
+                  rotationValue.setValue(0);
+                  rotationValues.current.push(rotationValue);
+                }
+              }
+            });
+          } else {
+            // Snap back to original position
+            Animated.parallel([
+              Animated.spring(panValues.current[index], {
+                toValue: { x: 0, y: 0 },
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+              }),
+              Animated.spring(rotationValues.current[index], {
+                toValue: 0,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+              }),
+            ]).start();
+          }
+        },
+      });
+    });
+  }, [polaroidStack]);
+  
+  // Update ref with memoized responders
+  useEffect(() => {
+    panResponders.current = panRespondersMemo;
+  }, [panRespondersMemo]);
 
   const handleStartQuiz = (quiz: Quiz) => {
     setSelectedQuiz(quiz);
@@ -220,88 +378,152 @@ export default function ProfileView() {
   // Get journal posts for the viewed profile
   const journalPosts = viewedProfile ? getPostsByUserId(viewedProfile.id) : [];
 
+  // Render polaroid stack
+  const renderPolaroidStack = () => {
+    if (!polaroidStack || polaroidStack.length === 0) {
+      return null;
+    }
+    
+    return (
+      <View style={styles.polaroidStackContainer}>
+        {polaroidStack.map((polaroid, index) => {
+          const isTop = index === 0;
+          const zIndex = polaroidStack.length - index;
+          
+          // Get animated values for top polaroid, static values for others
+          let translateX: any;
+          let translateY: any;
+          let rotate: any;
+          
+          if (isTop && panValues.current[index] && rotationValues.current[index]) {
+            translateX = panValues.current[index].x;
+            translateY = panValues.current[index].y;
+            rotate = rotationValues.current[index].interpolate({
+              inputRange: [-100, 0, 100],
+              outputRange: ['-30deg', '0deg', '30deg'],
+            });
+          } else {
+            // Static positioning for stacked polaroids
+            const baseRotation = (index % 2 === 0 ? 1 : -1) * (3 + index * 2);
+            const baseX = (index % 2 === 0 ? 1 : -1) * (10 + index * 5);
+            const baseY = index * 5;
+            
+            // Use animated values for stacked polaroids too (for smooth transitions)
+            if (panValues.current[index] && rotationValues.current[index]) {
+              translateX = panValues.current[index].x;
+              translateY = panValues.current[index].y;
+              rotate = rotationValues.current[index].interpolate({
+                inputRange: [-10, 0, 10],
+                outputRange: [`${baseRotation - 2}deg`, `${baseRotation}deg`, `${baseRotation + 2}deg`],
+              });
+            } else {
+              translateX = new Animated.Value(baseX);
+              translateY = new Animated.Value(baseY);
+              rotate = `${baseRotation}deg`;
+            }
+          }
+          
+          const panResponder = isTop && panRespondersMemo[index] 
+            ? panRespondersMemo[index] 
+            : null;
+          
+          return (
+            <Animated.View
+              key={`${polaroid.id}-${index}`}
+              style={[
+                styles.polaroidWrapper,
+                {
+                  zIndex,
+                  transform: [
+                    { translateX },
+                    { translateY },
+                    { rotate },
+                  ],
+                },
+              ]}
+              {...(isTop && panResponder ? panResponder.panHandlers : {})}
+              pointerEvents={isTop ? 'auto' : 'none'}
+            >
+              <View style={styles.polaroidFrame} pointerEvents="none">
+                <View style={styles.polaroidImageContainer}>
+                  <Image
+                    source={{ uri: polaroid.imageUrl }}
+                    style={styles.polaroidImage}
+                    resizeMode="cover"
+                  />
+                </View>
+                <View style={styles.polaroidLabelContainer}>
+                  <Text style={styles.polaroidLabel}>{polaroid.label}</Text>
+                </View>
+              </View>
+            </Animated.View>
+          );
+        })}
+      </View>
+    );
+  };
+
   return (
     <Layout>
-      <ScrollView 
-        style={styles.container} 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        nestedScrollEnabled={true}
-        scrollEnabled={true}
-      >
-        {/* Header with Back Button */}
-        <View style={styles.headerSection}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <FontAwesome name="arrow-left" size={20} color={Colors.text} />
-          </TouchableOpacity>
+      <View style={styles.container}>
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <FontAwesome name="arrow-left" size={20} color="#000" />
+        </TouchableOpacity>
 
-          {/* Profile Header */}
-          <View style={styles.profileHeader}>
-            {viewedProfile?.imageUrl ? (
-              <Image
-                source={{ uri: viewedProfile.imageUrl }}
-                style={styles.profileImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={styles.profileImagePlaceholder} />
-            )}
-            {/* Verification Badge */}
-            <View style={styles.verifiedBadge}>
-              <FontAwesome name="check-circle" size={20} color="#fff" />
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Polaroid Stack Section */}
+          {polaroidStack.length > 0 ? (
+            <View style={styles.polaroidSection}>
+              {renderPolaroidStack()}
             </View>
-          </View>
+          ) : (
+            <View style={styles.profileHeader}>
+              {viewedProfile?.imageUrl ? (
+                <Image
+                  source={{ uri: viewedProfile.imageUrl }}
+                  style={styles.profileImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.profileImagePlaceholder} />
+              )}
+            </View>
+          )}
 
           {/* Profile Info */}
           <View style={styles.profileInfo}>
-            <View style={styles.profileCard}>
-              <Text style={styles.profileName}>
-                {viewedProfile ? `${viewedProfile.name}, ${viewedProfile.age}` : 'Loading...'}
+            <Text style={styles.profileName}>
+              {viewedProfile ? `${viewedProfile.name}, ${viewedProfile.age}` : 'Loading...'}
+            </Text>
+            {!isOwnProfile && currentUser && viewedProfile && (
+              <Text style={styles.kindredMatch}>
+                {compatibilityPercentage}% kindred spirit
               </Text>
-              <Text style={styles.profileLocation}>
-                {viewedProfile?.location || ''}
-              </Text>
-              
-              {/* Compatibility Badge - Only show if not own profile */}
-              {!isOwnProfile && currentUser && viewedProfile && (
-                <>
-                  <View style={styles.compatibilityBadge}>
-                    <FontAwesome name="heart" size={32} color={Colors.gold} />
-                    <Text style={styles.compatibilityPercent}>{compatibilityPercentage}%</Text>
-                    <Text style={styles.compatibilityLabel}>Kindred Match</Text>
-                  </View>
-                  
-                  {/* Action Buttons - Moved to top */}
-                  <View style={styles.actionButtonsTop}>
-                    <LinearGradient
-                      colors={['#FF8A80', '#FFB74D']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 0, y: 1 }}
-                      style={styles.messageButton}
-                    >
-                      <TouchableOpacity 
-                        style={styles.messageButtonInner}
-                        activeOpacity={0.8}
-                      >
-                        <FontAwesome name="comment" size={20} color="#FFFFFF" />
-                        <Text style={styles.messageButtonText}>Message</Text>
-                      </TouchableOpacity>
-                    </LinearGradient>
-                    <TouchableOpacity style={styles.iconButton}>
-                      <FontAwesome name="comment-o" size={20} color={Colors.gold} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconButton}>
-                      <FontAwesome name="gift" size={20} color={Colors.gold} />
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-            </View>
+            )}
+            {viewedProfile?.interests && viewedProfile.interests.length > 0 && (
+              <View style={styles.interestsRow}>
+                {viewedProfile.interests.slice(0, 2).map((interest, idx) => (
+                  <Text 
+                    key={idx} 
+                    style={[
+                      styles.interestText,
+                      idx === 0 && styles.interestTextShared
+                    ]}
+                  >
+                    {interest.toLowerCase()}
+                  </Text>
+                ))}
+              </View>
+            )}
           </View>
-        </View>
 
         {/* Vouches Section - Pinned to Top with Gradient Background */}
         {approvedVouches.length > 0 && (
@@ -581,8 +803,8 @@ export default function ProfileView() {
 
           </View>
         </View>
-
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       {/* Quiz Modal */}
       <Modal
@@ -708,31 +930,88 @@ export default function ProfileView() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background, // Deep burgundy/wine red
+    backgroundColor: '#F5D7D7', // Muted pink background
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: 100,
   },
-  headerSection: {
-    position: 'relative',
-  },
   backButton: {
     position: 'absolute',
-    top: 24,
+    top: 50,
     left: 24,
-    zIndex: 10,
-    backgroundColor: Colors.card, // Slightly lighter burgundy
+    zIndex: 100,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 12,
-    shadowColor: Colors.gold, // Champagne gold glow
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
+  polaroidSection: {
+    height: 500,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+    paddingHorizontal: 20,
+  },
+  polaroidStackContainer: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  polaroidWrapper: {
+    position: 'absolute',
+    width: 280,
+    height: 360,
+    // Ensure touch events work properly
+    pointerEvents: 'box-none',
+  },
+  polaroidFrame: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#8B0000', // Dark red outline
+  },
+  polaroidImageContainer: {
+    width: '100%',
+    height: '80%',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  polaroidImage: {
+    width: '100%',
+    height: '100%',
+  },
+  polaroidLabelContainer: {
+    paddingHorizontal: 8,
+  },
+  polaroidLabel: {
+    fontSize: 14,
+    fontFamily: Typography.body.fontFamily,
+    color: '#000',
+    fontStyle: 'italic',
+  },
   profileHeader: {
     height: 400,
-    backgroundColor: Colors.border, // Muted burgundy
+    backgroundColor: Colors.border,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -743,7 +1022,7 @@ const styles = StyleSheet.create({
   profileImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: Colors.border, // Muted burgundy
+    backgroundColor: Colors.border,
   },
   verifiedBadge: {
     position: 'absolute',
@@ -753,49 +1032,60 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
   },
+  compatibilityOverlay: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Semi-transparent black background
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  compatibilityOverlayText: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: Colors.gold, // Champagne gold
+  },
   profileInfo: {
     paddingHorizontal: 24,
-    marginTop: -32,
-  },
-  profileCard: {
-    backgroundColor: Colors.card, // Slightly lighter burgundy
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: Colors.gold, // Champagne gold glow
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    paddingTop: 40,
+    alignItems: 'center',
   },
   profileName: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: Colors.text, // Cream/Off-white
+    fontSize: 24,
+    fontFamily: Typography.heading.fontFamily,
+    color: '#000',
     marginBottom: 8,
+    textAlign: 'center',
+  },
+  kindredMatch: {
+    fontSize: 16,
+    fontFamily: Typography.body.fontFamily,
+    color: '#000',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  interestsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  interestText: {
+    fontSize: 16,
+    fontFamily: Typography.body.fontFamily,
+    color: '#999999',
+  },
+  interestTextShared: {
+    color: '#666666',
   },
   profileLocation: {
     fontSize: 16,
-    color: Colors.textLight, // Light cream
+    color: Colors.textLight,
     marginBottom: 16,
-  },
-  compatibilityBadge: {
-    backgroundColor: 'rgba(212, 165, 116, 0.1)', // Champagne gold with opacity
-    borderWidth: 2,
-    borderColor: Colors.gold, // Champagne gold
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    gap: 8,
-  },
-  compatibilityPercent: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: Colors.gold, // Champagne gold
-  },
-  compatibilityLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.gold, // Champagne gold
   },
   pinnedVouchesSection: {
     marginTop: 24,
@@ -886,11 +1176,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderWidth: 1,
     borderColor: '#FFD4B8', // Slightly darker peach border
-  },
-  interestText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#2C2C2C', // Dark charcoal for maximum readability
   },
   emptyContentText: {
     fontSize: 16,
@@ -1260,7 +1545,6 @@ const styles = StyleSheet.create({
   },
   postUserName: {
     fontSize: Typography.heading.fontSize.xs,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     letterSpacing: Typography.heading.letterSpacing,
@@ -1322,7 +1606,6 @@ const styles = StyleSheet.create({
   verifiedReviewBadge: {
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
-    fontWeight: '700',
     color: Colors.gold, // Champagne gold
   },
   verifiedReviewContent: {
@@ -1334,7 +1617,6 @@ const styles = StyleSheet.create({
   verifiedReviewLabel: {
     fontSize: Typography.body.fontSize.xs,
     fontFamily: Typography.body.fontFamily,
-    fontWeight: '600',
     color: Colors.textLight,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -1394,7 +1676,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.xs,
     fontFamily: Typography.body.fontFamily,
     color: '#FFFFFF',
-    fontWeight: '700',
   },
   vouchContent: {
     gap: 16,
@@ -1405,7 +1686,6 @@ const styles = StyleSheet.create({
   vouchLabel: {
     fontSize: Typography.body.fontSize.xs,
     fontFamily: Typography.body.fontFamily,
-    fontWeight: '700',
     color: '#CD7F32', // Muted bronze - colorful badge
     textTransform: 'uppercase',
     letterSpacing: 2, // Wide letter spacing

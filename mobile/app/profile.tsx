@@ -856,7 +856,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.heading.fontSize.lg,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     marginBottom: 8,
@@ -866,7 +865,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
     color: Colors.textLight,
-    fontWeight: '500',
   },
   progressContainer: {
     paddingHorizontal: 24,
@@ -895,7 +893,6 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: Typography.heading.fontSize.md,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     letterSpacing: Typography.heading.letterSpacing,
@@ -912,7 +909,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
-    fontWeight: '600',
     color: Colors.text,
   },
   input: {
@@ -935,7 +931,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
     color: Colors.gold,
-    fontWeight: '600',
   },
   interestsGrid: {
     flexDirection: 'row',
@@ -964,7 +959,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
     color: Colors.text,
-    fontWeight: '500',
   },
   interestChipTextSelected: {
     color: Colors.background,
@@ -995,7 +989,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.md,
     fontFamily: Typography.body.fontFamily,
     color: Colors.gold,
-    fontWeight: '600',
   },
   spacer: {
     flex: 1,
@@ -1016,7 +1009,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.md,
     fontFamily: Typography.body.fontFamily,
     color: Colors.background,
-    fontWeight: '700',
   },
   nextButtonTextDisabled: {
     color: Colors.textLight,
@@ -1037,7 +1029,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.md,
     fontFamily: Typography.body.fontFamily,
     color: Colors.background,
-    fontWeight: '700',
   },
   saveButtonTextDisabled: {
     color: Colors.textLight,
@@ -1056,7 +1047,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
     color: Colors.gold,
-    fontWeight: '600',
   },
   profileInfo: {
     paddingHorizontal: 24,
@@ -1072,7 +1062,6 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: Typography.heading.fontSize.lg,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     marginBottom: 8,
@@ -1092,7 +1081,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: Typography.heading.fontSize.sm,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     marginBottom: 12,
@@ -1400,7 +1388,6 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: Typography.heading.fontSize.md,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     marginBottom: 8,
@@ -1438,7 +1425,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.md,
     fontFamily: Typography.body.fontFamily,
     color: Colors.background,
-    fontWeight: '700',
   },
   vouchesList: {
     gap: 16,
@@ -1464,7 +1450,6 @@ const styles = StyleSheet.create({
   },
   vouchFriendName: {
     fontSize: Typography.heading.fontSize.sm,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     letterSpacing: Typography.heading.letterSpacing,
@@ -1482,7 +1467,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.xs,
     fontFamily: Typography.body.fontFamily,
     color: Colors.gold,
-    fontWeight: '600',
   },
   pendingBadge: {
     backgroundColor: Colors.background,
@@ -1505,7 +1489,6 @@ const styles = StyleSheet.create({
   vouchLabel: {
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
-    fontWeight: '600',
     color: Colors.textLight,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -1538,6 +1521,5 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
     color: Colors.gold,
-    fontWeight: '600',
   },
 });

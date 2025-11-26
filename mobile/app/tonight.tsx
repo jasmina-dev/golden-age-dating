@@ -458,7 +458,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.heading.fontSize.lg,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: '#b8860b', // Dark golden color for title
     marginBottom: 32,
@@ -498,7 +497,6 @@ const styles = StyleSheet.create({
   },
   availabilityTitle: {
     fontSize: Typography.heading.fontSize.sm,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     marginBottom: 6,
@@ -517,7 +515,6 @@ const styles = StyleSheet.create({
   },
   plansTitle: {
     fontSize: Typography.heading.fontSize.xs,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     marginBottom: 20,
@@ -546,7 +543,6 @@ const styles = StyleSheet.create({
   },
   planHeadline: {
     fontSize: Typography.heading.fontSize.sm,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     marginBottom: 6,
@@ -659,7 +655,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: Typography.heading.fontSize.md,
-    fontWeight: Typography.heading.fontWeight,
     fontFamily: Typography.heading.fontFamily,
     color: Colors.text,
     letterSpacing: Typography.heading.letterSpacing,
