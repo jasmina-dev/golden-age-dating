@@ -10,11 +10,12 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-// Navigation items with correct icons: Compass (active/gold), Color Wheel, Chat Bubble, Profile User
+// Navigation items with correct icons: Compass (active/gold), Color Wheel, Chat Bubble, Calendar (Tonight), Profile User
 const navItems = [
   { icon: 'compass', label: 'Explore', path: '/explore' },
   { icon: 'paint-brush', label: 'Community', path: '/community' }, // Color Wheel alternative (paint brush/palette)
   { icon: 'comment', label: 'Messages', path: '/messages' },
+  { icon: 'calendar', label: 'Tonight', path: '/tonight' },
   { icon: 'user', label: 'Profile', path: '/profile' },
 ];
 
