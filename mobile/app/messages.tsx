@@ -111,7 +111,7 @@ export default function Messages() {
               onChangeText={setMessage}
               placeholder="Type a message..."
               style={styles.input}
-              placeholderTextColor="#999"
+              placeholderTextColor={Colors.textLight}
               multiline
             />
             <TouchableOpacity style={styles.sendButton}>
@@ -132,7 +132,7 @@ export default function Messages() {
 
         {mockChats.length === 0 ? (
           <View style={styles.emptyState}>
-            <FontAwesome name="comment" size={64} color="#999" />
+            <FontAwesome name="comment" size={64} color={Colors.textLight} />
             <Text style={styles.emptyTitle}>No messages yet</Text>
             <Text style={styles.emptyText}>
               Start a conversation with someone you connect with
@@ -170,7 +170,7 @@ export default function Messages() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background, // Deep burgundy/wine red
     paddingHorizontal: 24,
     paddingTop: 24,
   },
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
   },
   emptyState: {
     flex: 1,
@@ -190,13 +190,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    color: Colors.textLight, // Light cream
     textAlign: 'center',
   },
   chatsList: {
@@ -209,20 +209,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy for cards
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: Colors.gold, // Champagne gold glow
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border, // Muted burgundy border
   },
   chatAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Colors.border,
   },
   chatInfo: {
     flex: 1,
@@ -237,15 +239,15 @@ const styles = StyleSheet.create({
   chatItemName: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
   },
   chatTime: {
     fontSize: 12,
-    color: '#999',
+    color: Colors.textLight, // Light cream
   },
   chatLastMessage: {
     fontSize: 14,
-    color: '#999',
+    color: Colors.textLight, // Light cream
   },
   unreadDot: {
     width: 8,
@@ -255,15 +257,15 @@ const styles = StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background, // Deep burgundy/wine red
   },
   chatHeader: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background, // Deep burgundy/wine red
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: Colors.border, // Muted burgundy border
   },
   chatHeaderTop: {
     flexDirection: 'row',
@@ -272,7 +274,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   backButton: {
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     borderRadius: 20,
     padding: 8,
   },
@@ -285,10 +287,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   ratingText: {
     fontSize: 14,
@@ -298,11 +302,11 @@ const styles = StyleSheet.create({
   icebreakersContainer: {
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: Colors.border, // Muted burgundy border
   },
   icebreakerIcon: {
     marginTop: 4,
@@ -313,7 +317,7 @@ const styles = StyleSheet.create({
   icebreakersLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#999',
+    color: Colors.textLight, // Light cream
     marginBottom: 8,
   },
   icebreakersList: {
@@ -321,12 +325,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   icebreakerChip: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background, // Deep burgundy
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: Colors.gold, // Champagne gold border
   },
   icebreakerText: {
     fontSize: 12,
@@ -343,16 +347,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   messageBubbleLeft: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 16,
     borderTopLeftRadius: 4,
     padding: 16,
     maxWidth: '75%',
-    shadowColor: '#000',
+    shadowColor: Colors.gold, // Champagne gold glow
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   messageTextLeft: {
     fontSize: 16,
@@ -363,7 +369,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   messageBubbleRight: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold, // Champagne gold
     borderRadius: 16,
     borderTopRightRadius: 4,
     padding: 16,
@@ -371,7 +377,7 @@ const styles = StyleSheet.create({
   },
   messageTextRight: {
     fontSize: 16,
-    color: '#fff',
+    color: Colors.background, // Deep burgundy text on gold
     lineHeight: 22,
   },
   inputContainer: {
@@ -380,21 +386,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
-    backgroundColor: '#fff',
+    borderTopColor: Colors.border, // Muted burgundy border
+    backgroundColor: Colors.background, // Deep burgundy/wine red
   },
   input: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: Colors.text,
+    color: Colors.text, // Cream/Off-white
     maxHeight: 100,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   sendButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold, // Champagne gold
     borderRadius: 16,
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -403,7 +411,7 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.background, // Deep burgundy text on gold
   },
 });
 

@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, FlatList, Dimensions, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Layout from '@/components/Layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
@@ -268,22 +269,32 @@ export default function ProfileView() {
               {!isOwnProfile && currentUser && viewedProfile && (
                 <>
                   <View style={styles.compatibilityBadge}>
-                    <FontAwesome name="heart" size={32} color={Colors.primary} />
+                    <FontAwesome name="heart" size={32} color={Colors.gold} />
                     <Text style={styles.compatibilityPercent}>{compatibilityPercentage}%</Text>
                     <Text style={styles.compatibilityLabel}>Kindred Match</Text>
                   </View>
                   
                   {/* Action Buttons - Moved to top */}
                   <View style={styles.actionButtonsTop}>
-                    <TouchableOpacity style={styles.messageButton}>
-                      <FontAwesome name="comment" size={20} color="#fff" />
-                      <Text style={styles.messageButtonText}>Message</Text>
+                    <LinearGradient
+                      colors={['#FF8A80', '#FFB74D']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0, y: 1 }}
+                      style={styles.messageButton}
+                    >
+                      <TouchableOpacity 
+                        style={styles.messageButtonInner}
+                        activeOpacity={0.8}
+                      >
+                        <FontAwesome name="comment" size={20} color="#FFFFFF" />
+                        <Text style={styles.messageButtonText}>Message</Text>
+                      </TouchableOpacity>
+                    </LinearGradient>
+                    <TouchableOpacity style={styles.iconButton}>
+                      <FontAwesome name="comment-o" size={20} color={Colors.gold} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.iconButton}>
-                      <FontAwesome name="comment-o" size={20} color={Colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconButton}>
-                      <FontAwesome name="gift" size={20} color={Colors.primary} />
+                      <FontAwesome name="gift" size={20} color={Colors.gold} />
                     </TouchableOpacity>
                   </View>
                 </>
@@ -292,33 +303,49 @@ export default function ProfileView() {
           </View>
         </View>
 
-        {/* Vouches Section - Pinned to Top */}
+        {/* Vouches Section - Pinned to Top with Gradient Background */}
         {approvedVouches.length > 0 && (
           <View style={styles.pinnedVouchesSection}>
-            {approvedVouches.map((vouch) => (
-              <View key={vouch.id} style={styles.vouchCard}>
-                <View style={styles.vouchHeader}>
-                  <View style={styles.vouchHeaderLeft}>
-                    <FontAwesome name="check-circle" size={18} color="#D4AF37" />
-                    <Text style={styles.vouchFriendName}>Vouched by {vouch.friendName}</Text>
+            {/* Soft Gradient Background */}
+            <LinearGradient
+              colors={['#FFFBF7', '#FFE8D6']} // Soft Cream to Pale Peach
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            
+            {/* Vouch Cards - Solid White */}
+            <View style={styles.vouchesContentContainer}>
+              {approvedVouches.map((vouch) => (
+                <View key={vouch.id} style={styles.vouchCard}>
+                  <View style={styles.vouchHeader}>
+                    <View style={styles.vouchHeaderLeft}>
+                      <FontAwesome name="check-circle" size={18} color={Colors.gold} />
+                      <Text style={styles.vouchFriendName}>Vouched by {vouch.friendName}</Text>
+                    </View>
+                    <LinearGradient
+                      colors={['#FFB3BA', '#FFDFBA']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.approvedBadge}
+                    >
+                      <FontAwesome name="check-circle" size={12} color="#FFFFFF" />
+                      <Text style={styles.approvedText}>Approved</Text>
+                    </LinearGradient>
                   </View>
-                  <View style={styles.approvedBadge}>
-                    <FontAwesome name="check-circle" size={14} color={Colors.primary} />
-                    <Text style={styles.approvedText}>Approved</Text>
+                  <View style={styles.vouchContent}>
+                    <View style={styles.vouchSection}>
+                      <Text style={styles.vouchLabel}>GREEN FLAG</Text>
+                      <Text style={styles.vouchAnswer}>{vouch.greenFlag}</Text>
+                    </View>
+                    <View style={styles.vouchSection}>
+                      <Text style={styles.vouchLabel}>HIDDEN TALENT</Text>
+                      <Text style={styles.vouchAnswer}>{vouch.hiddenTalent}</Text>
+                    </View>
                   </View>
                 </View>
-                <View style={styles.vouchContent}>
-                  <View style={styles.vouchSection}>
-                    <Text style={styles.vouchLabel}>Green Flag</Text>
-                    <Text style={styles.vouchAnswer}>{vouch.greenFlag}</Text>
-                  </View>
-                  <View style={styles.vouchSection}>
-                    <Text style={styles.vouchLabel}>Hidden Talent</Text>
-                    <Text style={styles.vouchAnswer}>{vouch.hiddenTalent}</Text>
-                  </View>
-                </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         )}
 
@@ -342,21 +369,31 @@ export default function ProfileView() {
           <View style={styles.tabContent}>
             {activeTab === 'about' && viewedProfile && (
               <View style={styles.contentSection}>
-                <View style={styles.contentCard}>
-                  <Text style={styles.contentTitle}>About</Text>
-                  <Text style={styles.contentText}>
-                    {viewedProfile.bio}
-                  </Text>
-                </View>
+                {/* Soft Gradient Background */}
+                <LinearGradient
+                  colors={['#FFFBF7', '#FFE8D6']} // Soft Cream to Pale Peach
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
                 
-                <View style={styles.contentCard}>
-                  <Text style={styles.contentTitle}>Interests</Text>
-                  <View style={styles.interestsContainer}>
-                    {viewedProfile.interests.map((interest) => (
-                      <View key={interest} style={styles.interestBadge}>
-                        <Text style={styles.interestText}>{interest}</Text>
-                      </View>
-                    ))}
+                <View style={styles.contentCardsContainer}>
+                  <View style={styles.contentCard}>
+                    <Text style={styles.contentTitle}>About</Text>
+                    <Text style={styles.contentText}>
+                      {viewedProfile.bio}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.contentCard}>
+                    <Text style={styles.contentTitle}>Interests</Text>
+                    <View style={styles.interestsContainer}>
+                      {viewedProfile.interests.map((interest) => (
+                        <View key={interest} style={styles.interestBadge}>
+                          <Text style={styles.interestText}>{interest}</Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 </View>
               </View>
@@ -381,7 +418,7 @@ export default function ProfileView() {
                             <Text style={styles.quizTitle}>{quiz.title}</Text>
                             {isCompleted && (
                               <View style={styles.completedBadge}>
-                                <FontAwesome name="check-circle" size={16} color={Colors.primary} />
+                                <FontAwesome name="check-circle" size={16} color={Colors.gold} />
                                 <Text style={styles.completedText}>Completed</Text>
                               </View>
                             )}
@@ -417,7 +454,7 @@ export default function ProfileView() {
                                 >
                                   {item.isMatch && (
                                     <View style={styles.matchBadge}>
-                                      <FontAwesome name="check-circle" size={20} color="#fff" />
+                                      <FontAwesome name="check-circle" size={20} color={Colors.background} />
                                       <Text style={styles.matchBadgeText}>Match!</Text>
                                     </View>
                                   )}
@@ -567,7 +604,7 @@ export default function ProfileView() {
                     onPress={() => setShowQuizModal(false)}
                     style={styles.modalCloseButton}
                   >
-                    <FontAwesome name="times" size={24} color="#000" />
+                    <FontAwesome name="times" size={24} color={Colors.text} />
                   </TouchableOpacity>
                 </View>
 
@@ -613,7 +650,7 @@ export default function ProfileView() {
                             {option}
                           </Text>
                           {isSelected && (
-                            <FontAwesome name="check-circle" size={20} color={Colors.primary} />
+                            <FontAwesome name="check-circle" size={20} color={Colors.gold} />
                           )}
                         </TouchableOpacity>
                       );
@@ -630,7 +667,7 @@ export default function ProfileView() {
                     onPress={handlePreviousQuestion}
                     disabled={currentQuestionIndex === 0}
                   >
-                    <FontAwesome name="chevron-left" size={16} color={currentQuestionIndex === 0 ? '#999' : '#000'} />
+                    <FontAwesome name="chevron-left" size={16} color={currentQuestionIndex === 0 ? Colors.textLight : Colors.text} />
                     <Text
                       style={[
                         styles.navButtonText,
@@ -655,7 +692,7 @@ export default function ProfileView() {
                         : 'Next'}
                     </Text>
                     {currentQuestionIndex < selectedQuiz.questions.length - 1 && (
-                      <FontAwesome name="chevron-right" size={16} color="#fff" />
+                      <FontAwesome name="chevron-right" size={16} color={Colors.background} />
                     )}
                   </TouchableOpacity>
                 </View>
@@ -671,7 +708,7 @@ export default function ProfileView() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background, // Deep burgundy/wine red
   },
   scrollContent: {
     paddingBottom: 100,
@@ -684,10 +721,10 @@ const styles = StyleSheet.create({
     top: 24,
     left: 24,
     zIndex: 10,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 20,
     padding: 12,
-    shadowColor: '#000',
+    shadowColor: Colors.gold, // Champagne gold glow
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -695,7 +732,7 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     height: 400,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Colors.border, // Muted burgundy
     position: 'relative',
     overflow: 'hidden',
   },
@@ -706,13 +743,13 @@ const styles = StyleSheet.create({
   profileImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Colors.border, // Muted burgundy
   },
   verifiedBadge: {
     position: 'absolute',
     top: 24,
     right: 24,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold, // Champagne gold
     borderRadius: 20,
     padding: 8,
   },
@@ -721,10 +758,10 @@ const styles = StyleSheet.create({
     marginTop: -32,
   },
   profileCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: Colors.gold, // Champagne gold glow
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -733,18 +770,18 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     marginBottom: 8,
   },
   profileLocation: {
     fontSize: 16,
-    color: '#999',
+    color: Colors.textLight, // Light cream
     marginBottom: 16,
   },
   compatibilityBadge: {
-    backgroundColor: 'rgba(220, 104, 116, 0.05)',
+    backgroundColor: 'rgba(212, 165, 116, 0.1)', // Champagne gold with opacity
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: Colors.gold, // Champagne gold
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -753,18 +790,23 @@ const styles = StyleSheet.create({
   compatibilityPercent: {
     fontSize: 48,
     fontWeight: '900',
-    color: Colors.primary,
+    color: Colors.gold, // Champagne gold
   },
   compatibilityLabel: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.primary,
+    color: Colors.gold, // Champagne gold
   },
   pinnedVouchesSection: {
-    paddingHorizontal: 24,
     marginTop: 24,
     marginBottom: 8,
-    gap: 16,
+    position: 'relative',
+  },
+  vouchesContentContainer: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    gap: 20,
+    position: 'relative',
   },
   tabsContainer: {
     paddingHorizontal: 24,
@@ -772,12 +814,12 @@ const styles = StyleSheet.create({
   },
   tabsList: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 16,
     padding: 4,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: Colors.border, // Muted burgundy border
   },
   tab: {
     flex: 1,
@@ -786,42 +828,50 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   tabActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold, // Champagne gold
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#999',
+    color: Colors.textLight, // Light cream
   },
   tabTextActive: {
-    color: '#fff',
+    color: Colors.background, // Deep burgundy (for text on gold)
   },
   tabContent: {
     marginBottom: 200,
     paddingBottom: 20,
   },
   contentSection: {
-    gap: 16,
+    gap: 20,
+    position: 'relative',
+    marginBottom: 24,
+  },
+  contentCardsContainer: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    gap: 20,
+    position: 'relative',
   },
   contentCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: '#FFFFFF', // Solid white at 100% opacity
+    borderRadius: 24, // Deeply rounded corners
+    padding: 28,
+    shadowColor: 'rgba(0, 0, 0, 0.08)', // Light grey, low opacity
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12, // Soft, diffused shadow
+    elevation: 3,
   },
   contentTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
+    color: '#2C2C2C', // Dark charcoal for maximum readability
     marginBottom: 12,
   },
   contentText: {
     fontSize: 16,
-    color: '#666',
+    color: '#2C2C2C', // Dark charcoal for maximum readability
     lineHeight: 24,
   },
   interestsContainer: {
@@ -830,49 +880,60 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   interestBadge: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFE8D6', // Soft pastel peach fill
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#FFD4B8', // Slightly darker peach border
   },
   interestText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#000',
+    color: '#2C2C2C', // Dark charcoal for maximum readability
   },
   emptyContentText: {
     fontSize: 16,
-    color: '#999',
+    color: Colors.textLight, // Light cream
     textAlign: 'center',
     padding: 24,
   },
   actionButtonsTop: {
     flexDirection: 'row',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 16,
     padding: 16,
     marginTop: 16,
-    shadowColor: '#000',
+    shadowColor: Colors.gold, // Champagne gold glow
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   messageButton: {
     flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  messageButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
-    borderRadius: 16,
     paddingVertical: 14,
   },
   messageButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FFFFFF',
   },
   iconButton: {
     width: 56,
@@ -881,26 +942,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: Colors.gold, // Champagne gold
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     marginBottom: 16,
   },
   quizCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: Colors.gold, // Champagne gold glow
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: Colors.border, // Muted burgundy border
   },
   quizCardHeader: {
     flexDirection: 'row',
@@ -911,7 +972,7 @@ const styles = StyleSheet.create({
   quizTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     flex: 1,
   },
   completedBadge: {
@@ -922,11 +983,11 @@ const styles = StyleSheet.create({
   completedText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.primary,
+    color: Colors.gold, // Champagne gold
   },
   quizDescription: {
     fontSize: 14,
-    color: '#666',
+    color: Colors.textLight, // Light cream
   },
   quizResultsContainer: {
     gap: 16,
@@ -934,17 +995,17 @@ const styles = StyleSheet.create({
   quizResultItem: {
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: Colors.border, // Muted burgundy border
   },
   quizResultQuestion: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     marginBottom: 8,
   },
   quizResultAnswer: {
     fontSize: 14,
-    color: '#666',
+    color: Colors.textMuted, // Muted cream
   },
   quizComparisonContainer: {
     marginBottom: 32,
@@ -952,7 +1013,7 @@ const styles = StyleSheet.create({
   quizComparisonTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     marginBottom: 16,
     paddingHorizontal: 4,
   },
@@ -967,22 +1028,22 @@ const styles = StyleSheet.create({
   },
   quizComparisonCard: {
     width: CARD_WIDTH,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 20,
     padding: 24,
     marginRight: 16,
     borderWidth: 2,
-    borderColor: '#e5e5e5',
-    shadowColor: '#000',
+    borderColor: Colors.border, // Muted burgundy border
+    shadowColor: Colors.gold, // Champagne gold glow
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 3,
     minHeight: 280,
   },
   quizComparisonCardMatch: {
-    backgroundColor: 'rgba(220, 104, 116, 0.08)',
-    borderColor: Colors.primary,
+    backgroundColor: 'rgba(212, 165, 116, 0.15)', // Champagne gold with opacity
+    borderColor: Colors.gold, // Champagne gold
     borderWidth: 3,
   },
   matchBadge: {
@@ -992,19 +1053,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold, // Champagne gold
     borderRadius: 12,
     alignSelf: 'flex-start',
   },
   matchBadgeText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.background, // Deep burgundy text on gold
   },
   comparisonQuestionText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     marginBottom: 20,
     lineHeight: 26,
   },
@@ -1015,23 +1076,23 @@ const styles = StyleSheet.create({
   answerLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: Colors.textLight, // Light cream
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   answerText: {
     fontSize: 16,
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     fontWeight: '500',
     lineHeight: 22,
   },
   answerTextMatch: {
-    color: Colors.primary,
+    color: Colors.gold, // Champagne gold
     fontWeight: '600',
   },
   noAnswerText: {
     fontSize: 14,
-    color: '#999',
+    color: Colors.textLight, // Light cream
     fontStyle: 'italic',
   },
   modalOverlay: {
@@ -1040,7 +1101,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 24,
@@ -1057,7 +1118,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
   },
   modalCloseButton: {
     padding: 4,
@@ -1067,19 +1128,19 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#e5e5e5',
+    backgroundColor: Colors.border, // Muted burgundy
     borderRadius: 2,
     marginBottom: 8,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold, // Champagne gold
     borderRadius: 2,
   },
   progressText: {
     fontSize: 12,
-    color: '#999',
+    color: Colors.textLight, // Light cream
     textAlign: 'center',
   },
   quizContent: {
@@ -1089,7 +1150,7 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     marginBottom: 24,
     lineHeight: 28,
   },
@@ -1102,23 +1163,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.background, // Deep burgundy
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: Colors.border, // Muted burgundy border
   },
   optionButtonSelected: {
-    backgroundColor: 'rgba(220, 104, 116, 0.15)',
-    borderColor: Colors.primary,
+    backgroundColor: 'rgba(212, 165, 116, 0.15)', // Champagne gold with opacity
+    borderColor: Colors.gold, // Champagne gold
   },
   optionText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
     flex: 1,
   },
   optionTextSelected: {
-    color: Colors.primary,
+    color: Colors.gold, // Champagne gold
     fontWeight: '600',
   },
   modalFooter: {
@@ -1128,7 +1189,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: Colors.border, // Muted burgundy border
   },
   navButton: {
     flexDirection: 'row',
@@ -1143,10 +1204,10 @@ const styles = StyleSheet.create({
   navButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: Colors.text, // Cream/Off-white
   },
   navButtonTextDisabled: {
-    color: '#999',
+    color: Colors.textLight, // Light cream
   },
   nextButton: {
     flex: 1,
@@ -1154,18 +1215,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold, // Champagne gold
     borderRadius: 12,
     paddingVertical: 14,
   },
   nextButtonDisabled: {
-    backgroundColor: '#e5e5e5',
+    backgroundColor: Colors.border, // Muted burgundy
     opacity: 0.5,
   },
   nextButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.background, // Deep burgundy text on gold
   },
   journalContainer: {
     gap: 20,
@@ -1174,14 +1235,16 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   postCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 20,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: Colors.gold, // Champagne gold glow
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   postHeader: {
     flexDirection: 'row',
@@ -1193,7 +1256,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Colors.border, // Muted burgundy
   },
   postUserName: {
     fontSize: Typography.heading.fontSize.xs,
@@ -1239,12 +1302,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   verifiedReviewCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Slightly lighter burgundy
     borderRadius: 16,
     padding: 20,
     borderWidth: 2,
-    borderColor: '#D4AF37', // Gold border
-    shadowColor: '#D4AF37',
+    borderColor: Colors.gold, // Champagne gold border
+    shadowColor: Colors.gold, // Champagne gold glow
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -1260,7 +1323,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
     fontWeight: '700',
-    color: '#D4AF37',
+    color: Colors.gold, // Champagne gold
   },
   verifiedReviewContent: {
     gap: 16,
@@ -1290,16 +1353,14 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   vouchCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#e5e5e5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: '#FFFFFF', // Solid white at 100% opacity
+    borderRadius: 24, // Deeply rounded corners
+    padding: 28,
+    shadowColor: 'rgba(0, 0, 0, 0.08)', // Light grey, low opacity
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12, // Soft, diffused shadow
+    elevation: 3,
   },
   vouchHeader: {
     flexDirection: 'row',
@@ -1314,26 +1375,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   vouchFriendName: {
-    fontSize: Typography.heading.fontSize.sm,
-    fontWeight: Typography.heading.fontWeight,
-    fontFamily: Typography.heading.fontFamily,
-    color: Colors.text,
-    letterSpacing: Typography.heading.letterSpacing,
+    fontSize: Typography.serif.fontSize.md,
+    fontWeight: Typography.serif.fontWeight,
+    fontFamily: Typography.serif.fontFamily,
+    color: '#2C2C2C', // Dark charcoal for maximum readability
+    letterSpacing: Typography.serif.letterSpacing,
   },
   approvedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(220, 104, 116, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20, // Pill shape
+    overflow: 'hidden',
   },
   approvedText: {
     fontSize: Typography.body.fontSize.xs,
     fontFamily: Typography.body.fontFamily,
-    color: Colors.primary,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   vouchContent: {
     gap: 16,
@@ -1342,18 +1403,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   vouchLabel: {
-    fontSize: Typography.body.fontSize.sm,
+    fontSize: Typography.body.fontSize.xs,
     fontFamily: Typography.body.fontFamily,
-    fontWeight: '600',
-    color: Colors.textLight,
+    fontWeight: '700',
+    color: '#CD7F32', // Muted bronze - colorful badge
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 2, // Wide letter spacing
+    marginBottom: 8,
   },
   vouchAnswer: {
     fontSize: Typography.body.fontSize.md,
     fontFamily: Typography.body.fontFamily,
-    color: Colors.text,
+    color: '#2C2C2C', // Dark charcoal for maximum readability
     lineHeight: Typography.body.lineHeight.md,
+    fontWeight: '500',
   },
 });
 

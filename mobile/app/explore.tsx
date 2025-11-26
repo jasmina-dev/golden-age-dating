@@ -1,680 +1,669 @@
-import { useState, useMemo, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable } from 'react-native';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  TouchableOpacity, 
+  Modal, 
+  Pressable, 
+  Dimensions,
+  Image,
+  ScrollView
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import Layout from '@/components/Layout';
-import ProfileCard from '@/components/ProfileCard';
-import FilterChip from '@/components/FilterChip';
+import { BlurView } from 'expo-blur';
+// Using gradient colors - will implement with View and backgroundColor for now
+// Can install expo-linear-gradient for better gradients: npm install expo-linear-gradient
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
+import { Typography } from '@/constants/Typography';
 import { sampleUserData, KindredUser } from '@/constants/UserData';
-import { getCurrentUser } from '@/lib/storage';
+import { getCurrentUser, isProfileRevealed, markProfileRevealed } from '@/lib/storage';
+import { trackProfileReveal } from '@/lib/tracking';
+// Gradient component helper - using solid colors for now
+const GradientView = ({ colors, children, style }: { colors: string[]; children: React.ReactNode; style?: any }) => {
+  return (
+    <View style={[style, { backgroundColor: colors[0] }]}>
+      {children}
+    </View>
+  );
+};
 
-type FilterType = 'gender' | 'age' | 'interest' | 'location';
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface Filter {
-  type: FilterType;
+  type: 'gender' | 'age' | 'interest' | 'location';
   value: string;
-  id: string; // Unique identifier for the filter
+  id: string;
 }
 
 interface FilterCriteria {
   gender?: string;
   minimumAge?: number;
+  maximumAge?: number;
   interests?: string[];
   location?: string;
+  distance?: number;
+  price?: { min: number; max: number };
 }
 
-/**
- * Normalize gender terms to canonical values
- * Maps common synonyms to 'Male' or 'Female'
- */
+// Category bubbles with pastel gradients
+const categories = [
+  { id: 'all', label: 'All', gradient: Colors.gradient1 },
+  { id: 'nearby', label: 'Nearby', gradient: Colors.gradient2 },
+  { id: 'new', label: 'New', gradient: Colors.gradient3 },
+  { id: 'verified', label: 'Verified', gradient: Colors.gradient4 },
+  { id: 'online', label: 'Online', gradient: Colors.gradient5 },
+];
+
 const normalizeGender = (genderTerm: string): string | null => {
   const normalized = genderTerm.toLowerCase().trim();
-  
-  // Female synonyms
   const femaleSynonyms = ['female', 'woman', 'women', 'girl', 'girls', 'f', 'w'];
-  if (femaleSynonyms.includes(normalized)) {
-    return 'Female';
-  }
-  
-  // Male synonyms
   const maleSynonyms = ['male', 'man', 'men', 'boy', 'boys', 'm'];
-  if (maleSynonyms.includes(normalized)) {
-    return 'Male';
-  }
   
-  // If it's already a canonical value, return it
+  if (femaleSynonyms.includes(normalized)) return 'Female';
+  if (maleSynonyms.includes(normalized)) return 'Male';
   if (normalized === 'female' || normalized === 'male') {
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
   }
-  
   return null;
 };
 
-/**
- * Core function to filter profiles based on criteria
- * This function exclusively uses criteria from activeFilters state
- */
 const filterProfiles = (profiles: KindredUser[], criteria: FilterCriteria): KindredUser[] => {
   return profiles.filter((profile) => {
-    // Filter by gender - use flexible matching with synonyms
     if (criteria.gender) {
       const normalizedCriteria = normalizeGender(criteria.gender);
       const normalizedProfile = normalizeGender(profile.gender);
-      
-      // If we can't normalize the criteria, try direct match
-      if (!normalizedCriteria) {
-        if (profile.gender.toLowerCase() !== criteria.gender.toLowerCase()) {
-          return false;
-        }
-      } else {
-        // Use normalized matching
-        if (normalizedProfile !== normalizedCriteria) {
-          return false;
-        }
-      }
+      if (normalizedCriteria && normalizedProfile !== normalizedCriteria) return false;
     }
-
-    // Filter by minimum age
-    if (criteria.minimumAge !== undefined) {
-      if (profile.age < criteria.minimumAge) {
-        return false;
-      }
-    }
-
-    // Filter by interests (check if profile has any of the specified interests)
+    if (criteria.minimumAge && profile.age < criteria.minimumAge) return false;
+    if (criteria.maximumAge && profile.age > criteria.maximumAge) return false;
     if (criteria.interests && criteria.interests.length > 0) {
       const profileInterestsLower = profile.interests.map((i) => i.toLowerCase());
       const hasMatchingInterest = criteria.interests.some((interest) =>
         profileInterestsLower.includes(interest.toLowerCase())
       );
-      if (!hasMatchingInterest) {
-        return false;
-      }
+      if (!hasMatchingInterest) return false;
     }
-
-    // Filter by location
     if (criteria.location) {
-      const profileLocationLower = profile.location.toLowerCase();
-      const searchLocationLower = criteria.location.toLowerCase();
-      if (!profileLocationLower.includes(searchLocationLower)) {
-        return false;
-      }
+      if (!profile.location.toLowerCase().includes(criteria.location.toLowerCase())) return false;
     }
-
     return true;
   });
 };
 
-/**
- * Convert filter objects to FilterCriteria
- */
-const filtersToCriteria = (filters: Filter[]): FilterCriteria => {
-  const criteria: FilterCriteria = {};
-  const interests: string[] = [];
-
-  filters.forEach((filter) => {
-    switch (filter.type) {
-      case 'gender':
-        const normalizedGender = normalizeGender(filter.value);
-        if (normalizedGender) {
-          criteria.gender = normalizedGender;
-        }
-        break;
-      case 'age':
-        const ageMatch = filter.value.match(/\d+/);
-        if (ageMatch) {
-          criteria.minimumAge = parseInt(ageMatch[0], 10);
-        }
-        break;
-      case 'interest':
-        interests.push(filter.value);
-        break;
-      case 'location':
-        criteria.location = filter.value;
-        break;
-    }
-  });
-
-  if (interests.length > 0) {
-    criteria.interests = interests;
-  }
-
-  return criteria;
-};
-
-/**
- * Parse search text and extract filters
- */
-const parseSearchText = (searchText: string): Filter[] => {
-  const filters: Filter[] = [];
-  if (!searchText.trim()) {
-    return filters;
-  }
-  
-  const words = searchText.toLowerCase().split(/\s+/);
-  const timestamp = Date.now();
-  
-  // Extract gender
-  for (const word of words) {
-    const normalizedGender = normalizeGender(word);
-    if (normalizedGender) {
-      filters.push({
-        type: 'gender',
-        value: normalizedGender,
-        id: `gender-${timestamp}-${Math.random()}`,
-      });
-      break; // Only take first gender match
-    }
-  }
-  
-  // Extract age (look for "over X" or "X+" patterns)
-  const agePatterns = [
-    /over\s+(\d+)/i,
-    /(\d+)\+/i,
-    /age\s+(\d+)/i,
-  ];
-  
-  for (const pattern of agePatterns) {
-    const match = searchText.match(pattern);
-    if (match) {
-      const age = parseInt(match[1], 10);
-      filters.push({
-        type: 'age',
-        value: `Over ${age}`,
-        id: `age-${timestamp}-${Math.random()}`,
-      });
-      break;
-    }
-  }
-  
-  // Extract interests (check against known interests from sampleUserData)
-  const allInterests = new Set<string>();
-  sampleUserData.forEach((user) => {
-    user.interests.forEach((interest) => allInterests.add(interest.toLowerCase()));
-  });
-  
-  for (const word of words) {
-    if (allInterests.has(word)) {
-      // Find the original case version
-      const originalInterest = sampleUserData
-        .flatMap((u) => u.interests)
-        .find((i) => i.toLowerCase() === word);
-      if (originalInterest && !filters.some((f) => f.type === 'interest' && f.value.toLowerCase() === word)) {
-        filters.push({
-          type: 'interest',
-          value: originalInterest,
-          id: `interest-${timestamp}-${Math.random()}`,
-        });
-      }
-    }
-  }
-  
-  return filters;
-};
-
-/**
- * Generate display label for a filter
- */
-const getFilterLabel = (filter: Filter): string => {
-  switch (filter.type) {
-    case 'gender':
-      return filter.value;
-    case 'age':
-      return filter.value;
-    case 'interest':
-      return filter.value;
-    case 'location':
-      return filter.value;
-    default:
-      return filter.value;
-  }
-};
-
-/**
- * Calculate the percentage of shared interests between the current user and a target profile
- * Returns a percentage (0-100) based on the Jaccard similarity coefficient
- */
 const calculateKindredMatch = (
   currentUserInterests: string[],
   targetProfileInterests: string[]
 ): number => {
-  // If either user has no interests, return 0
-  if (currentUserInterests.length === 0 || targetProfileInterests.length === 0) {
-    return 0;
-  }
-
-  // Normalize interests to lowercase for comparison
+  if (currentUserInterests.length === 0 || targetProfileInterests.length === 0) return 0;
   const currentInterestsLower = currentUserInterests.map((i) => i.toLowerCase());
   const targetInterestsLower = targetProfileInterests.map((i) => i.toLowerCase());
-
-  // Find shared interests
   const sharedInterests = currentInterestsLower.filter((interest) =>
     targetInterestsLower.includes(interest)
   );
-
-  // Calculate Jaccard similarity: intersection / union
   const union = new Set([...currentInterestsLower, ...targetInterestsLower]);
-  const intersection = sharedInterests.length;
-  const unionSize = union.size;
+  return Math.round((sharedInterests.length / union.size) * 100);
+};
 
-  // Calculate percentage
-  const percentage = Math.round((intersection / unionSize) * 100);
+// Profile Card Component - Separate component to use hooks
+interface ProfileCardItemProps {
+  item: KindredUser;
+  kindredMatch: number;
+  onProfilePress: () => void;
+  onMessagePress: () => void;
+}
 
-  return percentage;
+const ProfileCardItem = ({ item, kindredMatch, onProfilePress, onMessagePress }: ProfileCardItemProps) => {
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  useEffect(() => {
+    const revealed = isProfileRevealed(item.id);
+    setIsRevealed(revealed);
+  }, [item.id]);
+
+  const handleReveal = () => {
+    // Track the reveal and mark as revealed
+    trackProfileReveal(item.id);
+    markProfileRevealed(item.id);
+    // Reveal the image in place
+    setIsRevealed(true);
+  };
+
+  return (
+    <View style={styles.profileCard}>
+      {/* Full-screen profile image */}
+      {item.imageUrl ? (
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.profileImage}
+            resizeMode="cover"
+          />
+          {/* Blur Overlay - Only show if profile hasn't been revealed */}
+          {!isRevealed && (
+            <BlurView intensity={80} style={styles.blurOverlay}>
+              <View style={styles.blurContent} />
+            </BlurView>
+          )}
+        </View>
+      ) : (
+        <View style={[styles.profileImage, styles.profileImagePlaceholder]} />
+      )}
+
+      {/* Profile details overlay - bottom left */}
+      <View style={styles.profileDetailsOverlay}>
+        <Text style={styles.profileName}>
+          {item.name}, {item.age}
+        </Text>
+        <Text style={styles.profileLocation}>{item.location}</Text>
+        {/* Interests in overlay */}
+        {item.interests && item.interests.length > 0 && (
+          <View style={styles.interestsOverlay}>
+            {item.interests.slice(0, 3).map((interest, index) => (
+              <View key={index} style={styles.interestOverlayBadge}>
+                <Text style={styles.interestOverlayText}>{interest}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+        {kindredMatch > 0 && (
+          <View style={styles.matchBadge}>
+            <FontAwesome name="heart" size={14} color={Colors.coral} />
+            <Text style={styles.matchText}>{kindredMatch}% Match</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Action buttons - bottom right */}
+      <View style={styles.actionButtons}>
+        {!isRevealed ? (
+          // Show unlock icon when not revealed
+          <TouchableOpacity
+            style={styles.unlockButton}
+            onPress={handleReveal}
+            activeOpacity={0.8}
+          >
+            <FontAwesome name="unlock" size={24} color={Colors.text} />
+          </TouchableOpacity>
+        ) : (
+          // Show profile and message buttons when revealed
+          <>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={onProfilePress}
+            >
+              <FontAwesome name="user" size={20} color={Colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={onMessagePress}
+            >
+              <FontAwesome name="comment" size={20} color={Colors.text} />
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </View>
+  );
 };
 
 export default function Explore() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilters, setActiveFilters] = useState<Filter[]>([]); // No default filters
-  const [showAddFilterModal, setShowAddFilterModal] = useState(false);
-  const [selectedFilterType, setSelectedFilterType] = useState<FilterType | null>(null);
-  const [filterInputValue, setFilterInputValue] = useState('');
   const [currentUser, setCurrentUser] = useState<KindredUser | null>(null);
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({});
+  const [ageRange, setAgeRange] = useState([18, 50]);
+  const [distanceRange, setDistanceRange] = useState([0, 50]);
+  const [priceRange, setPriceRange] = useState([0, 100]);
+  const [genderFilter, setGenderFilter] = useState<string>('');
+  const flatListRef = useRef<FlatList>(null);
 
-  // Get current user on component mount
   useEffect(() => {
     const user = getCurrentUser();
     setCurrentUser(user);
   }, []);
 
-  // Convert activeFilters to criteria
-  const filterCriteria = useMemo((): FilterCriteria => {
-    return filtersToCriteria(activeFilters);
-  }, [activeFilters]);
-
-  // Filter profiles based on criteria
   const filteredProfiles = useMemo(() => {
-    return filterProfiles(sampleUserData, filterCriteria);
-  }, [filterCriteria]);
+    const criteria: FilterCriteria = {
+      ...filterCriteria,
+      minimumAge: ageRange[0],
+      maximumAge: ageRange[1],
+    };
+    return filterProfiles(sampleUserData, criteria);
+  }, [filterCriteria, ageRange]);
 
-  // Map KindredUser to ProfileCard props with calculated Kindred Match
-  // Filter out profiles below 70% match, exclude current user, and sort by match percentage (highest first)
   const profileCards = useMemo(() => {
     const currentUserInterests = currentUser?.interests || [];
     
     return filteredProfiles
       .filter((profile) => {
-        // Exclude the current user from matches
-        return currentUser?.id !== profile.id;
+        if (currentUser?.id === profile.id) return false;
+        const kindredMatch = calculateKindredMatch(currentUserInterests, profile.interests);
+        return kindredMatch >= 70;
       })
       .map((profile) => {
-        // Calculate Kindred Match based on shared interests
         const kindredMatch = calculateKindredMatch(currentUserInterests, profile.interests);
-        
-        return {
-          name: profile.name,
-          age: profile.age,
-          compatibility: kindredMatch,
-          interests: profile.interests.slice(0, 3), // Show first 3 interests
-          image: profile.imageUrl,
-          verified: true,
-          onClick: () => router.push(`/profile/${profile.id}`),
-        };
+        return { profile, kindredMatch };
       })
-      .filter((card) => card.compatibility >= 70) // Only show profiles with 70% or above match
-      .sort((a, b) => b.compatibility - a.compatibility); // Sort by match percentage descending (highest first)
+      .sort((a, b) => b.kindredMatch - a.kindredMatch)
+      .map((item) => item.profile);
   }, [filteredProfiles, currentUser]);
 
-  const removeFilter = (filterId: string) => {
-    setActiveFilters(activeFilters.filter((f) => f.id !== filterId));
-  };
+  const renderProfileCard = ({ item }: { item: KindredUser }) => {
+    const kindredMatch = currentUser
+      ? calculateKindredMatch(currentUser.interests, item.interests)
+      : 0;
 
-  const handleSearchChange = (text: string) => {
-    setSearchQuery(text);
-    
-    // Parse search text and update filters
-    const parsedFilters = parseSearchText(text);
-    
-    // Update filters: replace conflicting ones, add new ones
-    if (parsedFilters.length > 0) {
-      setActiveFilters((prevFilters) => {
-        const newFilters = [...prevFilters];
-        
-        // Remove conflicting filters of the same type
-        parsedFilters.forEach((parsedFilter) => {
-          const existingIndex = newFilters.findIndex((f) => f.type === parsedFilter.type);
-          if (existingIndex >= 0) {
-            newFilters.splice(existingIndex, 1);
-          }
-          newFilters.push(parsedFilter);
-        });
-        
-        return newFilters;
-      });
-    }
-  };
-
-  const handleAddFilter = () => {
-    setShowAddFilterModal(true);
-    setSelectedFilterType(null);
-    setFilterInputValue('');
-  };
-
-  const handleSelectFilterType = (type: FilterType) => {
-    setSelectedFilterType(type);
-    setFilterInputValue('');
-  };
-
-  const handleConfirmFilter = () => {
-    if (!selectedFilterType || !filterInputValue.trim()) {
-      return;
-    }
-
-    let value = filterInputValue.trim();
-    
-    // Normalize gender values
-    if (selectedFilterType === 'gender') {
-      const normalized = normalizeGender(value);
-      if (normalized) {
-        value = normalized;
-      }
-    }
-    
-    // Format age values
-    if (selectedFilterType === 'age') {
-      const ageMatch = value.match(/\d+/);
-      if (ageMatch) {
-        value = `Over ${ageMatch[0]}`;
-      }
-    }
-
-    // Check if filter already exists
-    const exists = activeFilters.some(
-      (f) => f.type === selectedFilterType && f.value.toLowerCase() === value.toLowerCase()
+    return (
+      <ProfileCardItem
+        item={item}
+        kindredMatch={kindredMatch}
+        onProfilePress={() => router.push(`/profile/${item.id}`)}
+        onMessagePress={() => router.push('/messages')}
+      />
     );
-
-    if (!exists) {
-      const newFilter: Filter = {
-        type: selectedFilterType,
-        value,
-        id: `filter-${Date.now()}-${Math.random()}`,
-      };
-
-      // Remove conflicting filter of the same type
-      setActiveFilters((prev) => {
-        const filtered = prev.filter((f) => f.type !== selectedFilterType);
-        return [...filtered, newFilter];
-      });
-    }
-
-    setShowAddFilterModal(false);
-    setSelectedFilterType(null);
-    setFilterInputValue('');
-  };
-
-  // Get available options for filter types
-  const getFilterOptions = (type: FilterType): string[] => {
-    switch (type) {
-      case 'gender':
-        return ['Male', 'Female'];
-      case 'age':
-        return ['Over 25', 'Over 30', 'Over 35'];
-      case 'interest':
-        const allInterests = new Set<string>();
-        sampleUserData.forEach((user) => {
-          user.interests.forEach((interest) => allInterests.add(interest));
-        });
-        return Array.from(allInterests).sort();
-      case 'location':
-        const allLocations = new Set<string>();
-        sampleUserData.forEach((user) => {
-          allLocations.add(user.location);
-        });
-        return Array.from(allLocations).sort();
-      default:
-        return [];
-    }
   };
 
   return (
-    <Layout>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <SafeAreaView edges={['top']} style={styles.header}>
-          <View style={styles.headerTop}>
-            <Text style={styles.title}>kindred</Text>
+    <View style={styles.container}>
+      {/* Category bubbles - top overlay */}
+      <SafeAreaView edges={['top']} style={styles.categoryContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScrollContent}
+        >
+          {categories.map((category) => (
             <TouchableOpacity
-              style={styles.profileButton}
-              onPress={() => router.push('/profile')}
+              key={category.id}
+              style={styles.categoryBubble}
+              onPress={() => setActiveCategory(category.id)}
+              activeOpacity={0.8}
             >
-              <FontAwesome name="heart" size={24} color={Colors.secondary} />
+              <GradientView colors={category.gradient} style={styles.categoryGradient}>
+                <Text
+                  style={[
+                    styles.categoryText,
+                    activeCategory === category.id && styles.categoryTextActive,
+                  ]}
+                >
+                  {category.label}
+                </Text>
+              </GradientView>
             </TouchableOpacity>
-          </View>
+          ))}
+        </ScrollView>
 
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <FontAwesome name="search" size={20} color="#999" style={styles.searchIcon} />
-            <TextInput
-              placeholder="men over 25 who like to hike"
-              value={searchQuery}
-              onChangeText={handleSearchChange}
-              style={styles.searchInput}
-              placeholderTextColor="#999"
-            />
-          </View>
-
-          {/* Filter Chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filtersContainer}
-            contentContainerStyle={styles.filtersContent}
-          >
-            {activeFilters.map((filter) => (
-              <FilterChip
-                key={filter.id}
-                label={getFilterLabel(filter)}
-                active
-                onRemove={() => removeFilter(filter.id)}
-              />
-            ))}
-            <TouchableOpacity onPress={handleAddFilter}>
-              <FilterChip label="Add Filter" />
+        {/* Filter button */}
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilterModal(true)}
+        >
+          <BlurView intensity={80} tint="light" style={styles.filterButtonBlur}>
+            <FontAwesome name="sliders" size={18} color={Colors.text} />
+          </BlurView>
             </TouchableOpacity>
-          </ScrollView>
         </SafeAreaView>
 
-        {/* Profile Grid */}
-        <View style={styles.profilesContainer}>
-          {profileCards.length > 0 ? (
-            profileCards.map((profile, index) => (
-              <ProfileCard
-                key={`${profile.name}-${index}`}
-                {...profile}
-              />
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No profiles match your filters</Text>
-              <Text style={styles.emptyStateSubtext}>Try adjusting your search or filters</Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+      {/* Vertical feed */}
+      <FlatList
+        ref={flatListRef}
+        data={profileCards}
+        renderItem={renderProfileCard}
+        keyExtractor={(item) => item.id}
+        pagingEnabled
+        snapToInterval={SCREEN_HEIGHT}
+        decelerationRate="fast"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.feedContent}
+      />
 
-      {/* Add Filter Modal */}
+      {/* Floating Navigation Bar */}
+      <View style={styles.navBarContainer}>
+        <BlurView intensity={80} tint="light" style={styles.navBarBlur}>
+          <View style={styles.navBar}>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => router.push('/explore')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="compass" size={22} color={Colors.coral} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => router.push('/community')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="paint-brush" size={22} color={Colors.textLight} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => router.push('/messages')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="comment" size={22} color={Colors.textLight} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => router.push('/profile')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="user" size={22} color={Colors.textLight} />
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </View>
+
+      {/* Filter Modal - Bottom Sheet */}
       <Modal
-        visible={showAddFilterModal}
+        visible={showFilterModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowAddFilterModal(false)}
+        onRequestClose={() => setShowFilterModal(false)}
       >
         <Pressable
           style={styles.modalOverlay}
-          onPress={() => setShowAddFilterModal(false)}
+          onPress={() => setShowFilterModal(false)}
         >
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Filter</Text>
+              <Text style={styles.modalTitle}>Filters</Text>
               <TouchableOpacity
-                onPress={() => setShowAddFilterModal(false)}
+                onPress={() => setShowFilterModal(false)}
                 style={styles.modalCloseButton}
               >
-                <FontAwesome name="times" size={24} color="#000" />
+                <FontAwesome name="times" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
 
-            {!selectedFilterType ? (
-              <View style={styles.filterTypeContainer}>
-                <Text style={styles.filterTypeLabel}>Select Filter Type</Text>
-                {(['gender', 'age', 'interest', 'location'] as FilterType[]).map((type) => (
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              {/* Gender Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterLabel}>Gender</Text>
+                <View style={styles.toggleContainer}>
+                  {['Male', 'Female', 'All'].map((gender) => (
                   <TouchableOpacity
-                    key={type}
-                    style={styles.filterTypeButton}
-                    onPress={() => handleSelectFilterType(type)}
-                  >
-                    <Text style={styles.filterTypeButtonText}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </Text>
-                    <FontAwesome name="chevron-right" size={16} color="#999" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : (
-              <View style={styles.filterValueContainer}>
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => setSelectedFilterType(null)}
-                >
-                  <FontAwesome name="chevron-left" size={16} color="#000" />
-                  <Text style={styles.backButtonText}>Back</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.filterValueLabel}>
-                  Select {selectedFilterType.charAt(0).toUpperCase() + selectedFilterType.slice(1)}
-                </Text>
-
-                {getFilterOptions(selectedFilterType).length > 0 ? (
-                  <ScrollView style={styles.optionsList}>
-                    {getFilterOptions(selectedFilterType).map((option) => (
-                      <TouchableOpacity
-                        key={option}
+                      key={gender}
+                      style={[
+                        styles.toggleButton,
+                        genderFilter === gender && styles.toggleButtonActive,
+                      ]}
+                      onPress={() => setGenderFilter(gender === 'All' ? '' : gender)}
+                    >
+                      <Text
                         style={[
-                          styles.optionButton,
-                          filterInputValue === option && styles.optionButtonSelected,
+                          styles.toggleText,
+                          genderFilter === gender && styles.toggleTextActive,
                         ]}
-                        onPress={() => setFilterInputValue(option)}
                       >
-                        <Text
-                          style={[
-                            styles.optionButtonText,
-                            filterInputValue === option && styles.optionButtonTextSelected,
-                          ]}
-                        >
-                          {option}
+                        {gender}
                         </Text>
-                        {filterInputValue === option && (
-                          <FontAwesome name="check" size={16} color={Colors.primary} />
-                        )}
                       </TouchableOpacity>
                     ))}
-                  </ScrollView>
-                ) : (
-                  <TextInput
-                    style={styles.filterInput}
-                    placeholder={`Enter ${selectedFilterType}...`}
-                    value={filterInputValue}
-                    onChangeText={setFilterInputValue}
-                    placeholderTextColor="#999"
-                  />
-                )}
-
-                <TouchableOpacity
-                  style={[
-                    styles.confirmButton,
-                    (!filterInputValue.trim() && styles.confirmButtonDisabled),
-                  ]}
-                  onPress={handleConfirmFilter}
-                  disabled={!filterInputValue.trim()}
-                >
-                  <Text style={styles.confirmButtonText}>Add Filter</Text>
-                </TouchableOpacity>
+                </View>
               </View>
-            )}
+
+              {/* Age Range */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterLabel}>
+                  Age: {ageRange[0]} - {ageRange[1]}
+                </Text>
+                <View style={styles.rangeInputContainer}>
+                  <Text style={styles.rangeValue}>{ageRange[0]}</Text>
+                  <View style={styles.rangeTrack}>
+                    <View style={[styles.rangeFill, { width: `${((ageRange[0] - 18) / (50 - 18)) * 100}%` }]} />
+                    <View style={[styles.rangeFill, { 
+                      left: `${((ageRange[0] - 18) / (50 - 18)) * 100}%`,
+                      width: `${((ageRange[1] - ageRange[0]) / (50 - 18)) * 100}%`
+                    }]} />
+                    <View style={[styles.rangeThumb, { left: `${((ageRange[0] - 18) / (50 - 18)) * 100}%` }]} />
+                    <View style={[styles.rangeThumb, { left: `${((ageRange[1] - 18) / (50 - 18)) * 100}%` }]} />
+                  </View>
+                  <Text style={styles.rangeValue}>{ageRange[1]}</Text>
+                </View>
+                <Text style={styles.rangeHint}>Tap and drag to adjust range</Text>
+              </View>
+
+              {/* Distance Range */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterLabel}>
+                  Distance: {distanceRange[0]} - {distanceRange[1]} miles
+                </Text>
+                <View style={styles.rangeInputContainer}>
+                  <Text style={styles.rangeValue}>{distanceRange[0]}</Text>
+                  <View style={styles.rangeTrack}>
+                    <View style={[styles.rangeFill, { width: `${(distanceRange[0] / 50) * 100}%` }]} />
+                    <View style={[styles.rangeFill, { 
+                      left: `${(distanceRange[0] / 50) * 100}%`,
+                      width: `${((distanceRange[1] - distanceRange[0]) / 50) * 100}%`
+                    }]} />
+                  </View>
+                  <Text style={styles.rangeValue}>{distanceRange[1]}</Text>
+                </View>
+                <Text style={styles.rangeHint}>Tap and drag to adjust range</Text>
+              </View>
+
+              {/* Price Range */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterLabel}>
+                  Price Range: ${priceRange[0]} - ${priceRange[1]}
+                </Text>
+                <View style={styles.rangeInputContainer}>
+                  <Text style={styles.rangeValue}>${priceRange[0]}</Text>
+                  <View style={styles.rangeTrack}>
+                    <View style={[styles.rangeFill, { width: `${(priceRange[0] / 100) * 100}%` }]} />
+                    <View style={[styles.rangeFill, { 
+                      left: `${(priceRange[0] / 100) * 100}%`,
+                      width: `${((priceRange[1] - priceRange[0]) / 100) * 100}%`
+                    }]} />
+                  </View>
+                  <Text style={styles.rangeValue}>${priceRange[1]}</Text>
+                </View>
+                <Text style={styles.rangeHint}>Tap and drag to adjust range</Text>
+              </View>
+
+              {/* Apply Button */}
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => {
+                  setFilterCriteria({
+                    ...filterCriteria,
+                    gender: genderFilter,
+                    price: { min: priceRange[0], max: priceRange[1] },
+                    distance: distanceRange[1],
+                  });
+                  setShowFilterModal(false);
+                }}
+              >
+                <GradientView colors={Colors.primaryGradient} style={styles.applyButtonGradient}>
+                  <Text style={styles.applyButtonText}>Apply Filters</Text>
+                </GradientView>
+              </TouchableOpacity>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
-    </Layout>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background,
   },
-  header: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#000',
-    letterSpacing: -1,
-  },
-  profileButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 20,
-    padding: 12,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
+  categoryContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    paddingTop: 8,
+    paddingBottom: 12,
     paddingHorizontal: 16,
-    height: 56,
-    marginBottom: 16,
   },
-  searchIcon: {
-    marginRight: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#000',
-  },
-  filtersContainer: {
-    marginTop: 8,
-  },
-  filtersContent: {
+  categoryScrollContent: {
+    paddingRight: 60, // Space for filter button
     gap: 8,
-    paddingRight: 24,
   },
-  profilesContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 24,
+  categoryBubble: {
+    marginRight: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
-  emptyState: {
-    paddingVertical: 48,
-    alignItems: 'center',
+  categoryGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
-  emptyStateText: {
-    fontSize: 18,
+  categoryText: {
+    fontSize: 14,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  categoryTextActive: {
     fontWeight: '700',
-    color: '#000',
+  },
+  filterButton: {
+    position: 'absolute',
+    right: 16,
+    top: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  filterButtonBlur: {
+    padding: 12,
+    borderRadius: 20,
+  },
+  profileCard: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    position: 'relative',
+  },
+  imageContainer: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  blurContent: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  profileImagePlaceholder: {
+    backgroundColor: Colors.border,
+  },
+  profileDetailsOverlay: {
+    position: 'absolute',
+    bottom: 120,
+    left: 24,
+    right: 100,
+    zIndex: 5,
+  },
+  profileName: {
+    fontSize: 32,
+    fontFamily: Typography.heading.fontFamily,
+    fontWeight: Typography.heading.fontWeight,
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    marginBottom: 4,
+  },
+  profileLocation: {
+    fontSize: 18,
+    fontFamily: Typography.body.fontFamily,
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
     marginBottom: 8,
   },
-  emptyStateSubtext: {
+  matchBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+    gap: 6,
+  },
+  matchText: {
     fontSize: 14,
-    color: '#999',
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  interestsOverlay: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  interestOverlayBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  interestOverlayText: {
+    fontSize: 12,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  actionButtons: {
+    position: 'absolute',
+    bottom: 120,
+    right: 24,
+    gap: 16,
+    zIndex: 5,
+  },
+  actionButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  unlockButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  feedContent: {
+    paddingBottom: 0,
   },
   modalOverlay: {
     flex: 1,
@@ -682,13 +671,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 24,
     paddingBottom: 40,
     paddingHorizontal: 24,
-    maxHeight: '80%',
+    maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -697,106 +686,153 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 28,
+    fontFamily: Typography.heading.fontFamily,
+    fontWeight: Typography.heading.fontWeight,
+    color: Colors.text,
   },
   modalCloseButton: {
     padding: 4,
   },
-  filterTypeContainer: {
+  modalScroll: {
+    flex: 1,
+  },
+  filterSection: {
+    marginBottom: 32,
+  },
+  filterLabel: {
+    fontSize: 18,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 16,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
     gap: 12,
   },
-  filterTypeLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 8,
-  },
-  filterTypeButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-  },
-  filterTypeButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000',
-  },
-  filterValueContainer: {
-    gap: 16,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000',
-  },
-  filterValueLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  optionsList: {
-    maxHeight: 300,
-  },
-  optionButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  optionButtonSelected: {
-    backgroundColor: Colors.primary + '20',
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
     borderWidth: 2,
-    borderColor: Colors.primary,
-  },
-  optionButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000',
-  },
-  optionButtonTextSelected: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  filterInput: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#000',
-    marginBottom: 8,
-  },
-  confirmButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderColor: Colors.border,
     alignItems: 'center',
+  },
+  toggleButtonActive: {
+    backgroundColor: Colors.coral,
+    borderColor: Colors.coral,
+  },
+  toggleText: {
+    fontSize: 16,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  toggleTextActive: {
+    color: '#FFFFFF',
+  },
+  rangeInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginTop: 8,
   },
-  confirmButtonDisabled: {
-    backgroundColor: '#e5e5e5',
-    opacity: 0.5,
-  },
-  confirmButtonText: {
+  rangeValue: {
     fontSize: 16,
+    fontFamily: Typography.body.fontFamily,
     fontWeight: '600',
-    color: '#fff',
+    color: Colors.text,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  rangeTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: Colors.border,
+    borderRadius: 3,
+    position: 'relative',
+  },
+  rangeFill: {
+    position: 'absolute',
+    height: '100%',
+    backgroundColor: Colors.coral,
+    borderRadius: 3,
+  },
+  rangeThumb: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.coral,
+    top: -7,
+    marginLeft: -10,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  rangeHint: {
+    fontSize: 12,
+    fontFamily: Typography.body.fontFamily,
+    color: Colors.textLight,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  applyButton: {
+    marginTop: 24,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  applyButtonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applyButtonText: {
+    fontSize: 18,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  navBarContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    zIndex: 10,
+  },
+  navBarBlur: {
+    borderRadius: 30,
+    overflow: 'hidden',
+    backgroundColor: Colors.navBarBackground,
+    borderWidth: 1,
+    borderColor: Colors.navBarBorder,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  navBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    minWidth: 280,
+  },
+  navItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
 });
-

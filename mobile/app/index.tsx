@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
+import { Typography } from '@/constants/Typography';
 import { useEffect } from 'react';
 import { getCurrentUser } from '@/lib/storage';
 
@@ -27,7 +28,7 @@ export default function Welcome() {
         <View style={styles.content}>
           {/* Logo */}
           <View style={styles.logoSection}>
-            <Text style={styles.logo}>kindred</Text>
+            <Text style={styles.logo}>Kindred.</Text>
             <Text style={styles.tagline}>DATING BEFORE THE SWIPE</Text>
           </View>
 
@@ -39,7 +40,7 @@ export default function Welcome() {
               activeOpacity={0.8}
             >
               <View style={styles.heartButtonContent}>
-                <FontAwesome name="heart" size={64} color={Colors.secondary} />
+                <FontAwesome name="heart" size={64} color={Colors.background} />
                 <Text style={styles.signUpText}>SIGN UP</Text>
               </View>
             </TouchableOpacity>
@@ -59,7 +60,7 @@ export default function Welcome() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background, // Deep espresso brown
   },
   scrollContent: {
     flexGrow: 1,
@@ -78,15 +79,17 @@ const styles = StyleSheet.create({
   },
   logo: {
     fontSize: 56,
-    fontWeight: '900',
-    color: '#000',
-    letterSpacing: -1,
+    fontFamily: Typography.heading.fontFamily, // Elegant serif font for "Kindred."
+    fontWeight: Typography.heading.fontWeight,
+    color: Colors.gold, // Metallic muted gold
+    letterSpacing: Typography.heading.letterSpacing,
     marginBottom: 24,
   },
   tagline: {
     fontSize: 18,
+    fontFamily: Typography.body.fontFamily,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text, // Off-white text
     letterSpacing: 1,
   },
   buttonSection: {
@@ -98,7 +101,7 @@ const styles = StyleSheet.create({
     width: 192,
     height: 192,
     borderRadius: 96,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: Colors.shadow,
@@ -115,7 +118,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     fontSize: 20,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.background,
     marginTop: 80,
   },
   inputPlaceholders: {
@@ -126,7 +129,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.card,
   },
 });
 

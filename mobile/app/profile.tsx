@@ -328,7 +328,7 @@ export default function Profile() {
           <SafeAreaView edges={['top']} style={styles.safeArea}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>MY PROFILE</Text>
+              <Text style={styles.title}>My Profile</Text>
               <TouchableOpacity
                 style={styles.editButton}
                 onPress={() => {
@@ -344,23 +344,45 @@ export default function Profile() {
                 }}
                 activeOpacity={0.7}
               >
-                <FontAwesome name="edit" size={18} color={Colors.primary} />
+                <FontAwesome name="edit" size={18} color={Colors.gold} />
                 <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Test Friend View Voucher Button */}
+            <View style={styles.testButtonContainer}>
+              <TouchableOpacity
+                style={styles.testButton}
+                onPress={() => router.push(`/vouch/${currentUser.id}`)}
+                activeOpacity={0.7}
+              >
+                <FontAwesome name="users" size={16} color={Colors.gold} />
+                <Text style={styles.testButtonText}>Test Friend View Voucher</Text>
               </TouchableOpacity>
             </View>
 
             {/* Vouches Section - Pinned to Top */}
             <View style={styles.pinnedVouchesSection}>
+              {/* Get Vouched Button - Always visible */}
+              <TouchableOpacity
+                style={styles.getVouchedButtonTop}
+                onPress={handleGetVouched}
+                activeOpacity={0.8}
+              >
+                <FontAwesome name="share" size={18} color={Colors.background} />
+                <Text style={styles.getVouchedButtonText}>Get Vouched</Text>
+              </TouchableOpacity>
+
               {approvedVouches.length > 0 ? (
                 approvedVouches.map((vouch) => (
                   <View key={vouch.id} style={styles.vouchCard}>
                     <View style={styles.vouchHeader}>
                       <View style={styles.vouchHeaderLeft}>
-                        <FontAwesome name="check-circle" size={18} color="#D4AF37" />
+                        <FontAwesome name="check-circle" size={18} color={Colors.gold} />
                         <Text style={styles.vouchFriendName}>Vouched by {vouch.friendName}</Text>
                       </View>
                       <View style={styles.approvedBadge}>
-                        <FontAwesome name="check-circle" size={14} color={Colors.primary} />
+                        <FontAwesome name="check-circle" size={14} color={Colors.gold} />
                         <Text style={styles.approvedText}>Approved</Text>
                       </View>
                     </View>
@@ -379,7 +401,7 @@ export default function Profile() {
               ) : (
                 <View style={styles.emptyStateCard}>
                   <View style={styles.emptyStateIcon}>
-                    <FontAwesome name="heart" size={48} color={Colors.primary} />
+                    <FontAwesome name="heart" size={48} color={Colors.gold} />
                   </View>
                   <Text style={styles.emptyStateTitle}>No vouches yet</Text>
                   <Text style={styles.emptyStateText}>
@@ -390,7 +412,7 @@ export default function Profile() {
                     onPress={handleGetVouched}
                     activeOpacity={0.8}
                   >
-                    <FontAwesome name="share" size={18} color="#fff" />
+                    <FontAwesome name="share" size={18} color={Colors.background} />
                     <Text style={styles.getVouchedButtonText}>Get Vouched</Text>
                   </TouchableOpacity>
                 </View>
@@ -460,7 +482,7 @@ export default function Profile() {
                             <Text style={styles.quizTitle}>{quiz.title}</Text>
                             {isCompleted && (
                               <View style={styles.completedBadge}>
-                                <FontAwesome name="check-circle" size={16} color={Colors.primary} />
+                                <FontAwesome name="check-circle" size={16} color={Colors.gold} />
                                 <Text style={styles.completedText}>Completed</Text>
                               </View>
                             )}
@@ -504,7 +526,7 @@ export default function Profile() {
                       onPress={() => setShowQuizModal(false)}
                       style={styles.modalCloseButton}
                     >
-                      <FontAwesome name="times" size={24} color="#000" />
+                      <FontAwesome name="times" size={24} color={Colors.text} />
                     </TouchableOpacity>
                   </View>
 
@@ -550,7 +572,7 @@ export default function Profile() {
                               {option}
                             </Text>
                             {isSelected && (
-                              <FontAwesome name="check-circle" size={20} color={Colors.primary} />
+                              <FontAwesome name="check-circle" size={20} color={Colors.gold} />
                             )}
                           </TouchableOpacity>
                         );
@@ -567,7 +589,7 @@ export default function Profile() {
                       onPress={handlePreviousQuestion}
                       disabled={currentQuestionIndex === 0}
                     >
-                      <FontAwesome name="chevron-left" size={16} color={currentQuestionIndex === 0 ? '#999' : '#000'} />
+                      <FontAwesome name="chevron-left" size={16} color={currentQuestionIndex === 0 ? Colors.textLight : Colors.text} />
                       <Text
                         style={[
                           styles.navButtonText,
@@ -592,7 +614,7 @@ export default function Profile() {
                           : 'Next'}
                       </Text>
                       {currentQuestionIndex < selectedQuiz.questions.length - 1 && (
-                        <FontAwesome name="chevron-right" size={16} color="#fff" />
+                        <FontAwesome name="chevron-right" size={16} color={Colors.background} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -615,7 +637,7 @@ export default function Profile() {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>MY PROFILE</Text>
+            <Text style={styles.title}>My Profile</Text>
             <Text style={styles.stepIndicator}>Step {currentStep} of {TOTAL_STEPS}</Text>
           </View>
 
@@ -780,7 +802,7 @@ export default function Profile() {
                 onPress={handleBack}
                 activeOpacity={0.7}
               >
-                <FontAwesome name="arrow-left" size={18} color={Colors.primary} />
+                <FontAwesome name="arrow-left" size={18} color={Colors.gold} />
                 <Text style={styles.backButtonText}>Back</Text>
               </TouchableOpacity>
             )}
@@ -858,7 +880,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
     borderRadius: 3,
   },
   scrollView: {
@@ -912,7 +934,7 @@ const styles = StyleSheet.create({
   selectedCountText: {
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
-    color: Colors.primary,
+    color: Colors.gold,
     fontWeight: '600',
   },
   interestsGrid: {
@@ -932,8 +954,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   interestChipSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.gold,
+    borderColor: Colors.gold,
   },
   interestChipDisabled: {
     opacity: 0.4,
@@ -972,7 +994,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: Typography.body.fontSize.md,
     fontFamily: Typography.body.fontFamily,
-    color: Colors.primary,
+    color: Colors.gold,
     fontWeight: '600',
   },
   spacer: {
@@ -982,7 +1004,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 24,
@@ -1003,7 +1025,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 24,
@@ -1028,12 +1050,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: Colors.gold,
   },
   editButtonText: {
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
-    color: Colors.primary,
+    color: Colors.gold,
     fontWeight: '600',
   },
   profileInfo: {
@@ -1088,7 +1110,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   interestBadge: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -1153,12 +1175,12 @@ const styles = StyleSheet.create({
   },
   tabsList: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 4,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: Colors.border,
   },
   tab: {
     flex: 1,
@@ -1167,15 +1189,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   tabActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#999',
+    color: Colors.textLight,
   },
   tabTextActive: {
-    color: '#fff',
+    color: Colors.background,
   },
   tabContent: {
     marginBottom: 100,
@@ -1185,22 +1207,22 @@ const styles = StyleSheet.create({
   },
   emptyContentText: {
     fontSize: 16,
-    color: '#999',
+    color: Colors.textLight,
     textAlign: 'center',
     padding: 24,
   },
   quizCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: Colors.gold,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: Colors.border,
   },
   quizCardHeader: {
     flexDirection: 'row',
@@ -1211,7 +1233,7 @@ const styles = StyleSheet.create({
   quizTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text,
     flex: 1,
   },
   completedBadge: {
@@ -1222,11 +1244,11 @@ const styles = StyleSheet.create({
   completedText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.primary,
+    color: Colors.gold,
   },
   quizDescription: {
     fontSize: 14,
-    color: '#666',
+    color: Colors.textLight,
   },
   modalOverlay: {
     flex: 1,
@@ -1234,7 +1256,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 24,
@@ -1251,7 +1273,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000',
+    color: Colors.text,
   },
   modalCloseButton: {
     padding: 4,
@@ -1261,19 +1283,19 @@ const styles = StyleSheet.create({
   },
   quizProgressBar: {
     height: 4,
-    backgroundColor: '#e5e5e5',
+    backgroundColor: Colors.border,
     borderRadius: 2,
     marginBottom: 8,
     overflow: 'hidden',
   },
   quizProgressFill: {
     height: '100%',
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
     borderRadius: 2,
   },
   quizProgressText: {
     fontSize: 12,
-    color: '#999',
+    color: Colors.textLight,
     textAlign: 'center',
   },
   quizContent: {
@@ -1303,7 +1325,7 @@ const styles = StyleSheet.create({
   },
   optionButtonSelected: {
     backgroundColor: 'rgba(220, 104, 116, 0.15)',
-    borderColor: Colors.primary,
+    borderColor: Colors.gold,
   },
   optionText: {
     fontSize: 16,
@@ -1312,7 +1334,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionTextSelected: {
-    color: Colors.primary,
+    color: Colors.gold,
     fontWeight: '600',
   },
   modalFooter: {
@@ -1322,7 +1344,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: Colors.border,
   },
   navButton: {
     flexDirection: 'row',
@@ -1337,10 +1359,10 @@ const styles = StyleSheet.create({
   navButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: Colors.text,
   },
   navButtonTextDisabled: {
-    color: '#999',
+    color: Colors.textLight,
   },
   quizNextButton: {
     flex: 1,
@@ -1348,18 +1370,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
     borderRadius: 12,
     paddingVertical: 14,
   },
   quizNextButtonDisabled: {
-    backgroundColor: '#e5e5e5',
+    backgroundColor: Colors.border,
     opacity: 0.5,
   },
   quizNextButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.background,
   },
   vouchesContainer: {
     gap: 16,
@@ -1396,10 +1418,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.gold,
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 24,
+  },
+  getVouchedButtonTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.gold,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginBottom: 16,
   },
   getVouchedButtonText: {
     fontSize: Typography.body.fontSize.md,
@@ -1448,11 +1481,11 @@ const styles = StyleSheet.create({
   approvedText: {
     fontSize: Typography.body.fontSize.xs,
     fontFamily: Typography.body.fontFamily,
-    color: Colors.primary,
+    color: Colors.gold,
     fontWeight: '600',
   },
   pendingBadge: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.background,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -1483,23 +1516,28 @@ const styles = StyleSheet.create({
     color: Colors.text,
     lineHeight: Typography.body.lineHeight.md,
   },
+  testButtonContainer: {
+    paddingHorizontal: 24,
+    marginTop: 8,
+    marginBottom: 8,
+  },
   testButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(220, 104, 116, 0.1)',
+    backgroundColor: 'rgba(212, 165, 97, 0.1)',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    marginBottom: 16,
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: Colors.gold,
     borderStyle: 'dashed',
   },
   testButtonText: {
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
-    color: Colors.primary,
+    color: Colors.gold,
     fontWeight: '600',
   },
 });

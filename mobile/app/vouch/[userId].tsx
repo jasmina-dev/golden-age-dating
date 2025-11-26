@@ -9,7 +9,7 @@ import { getUserById, getUsers } from '@/lib/storage';
 import { KindredUser, sampleUserData } from '@/constants/UserData';
 import { saveVouch } from '@/constants/Vouches';
 
-const PRIMARY_PINK = '#E0536F';
+// Use Colors.primary instead (Deep Burgundy)
 
 export default function VouchPage() {
   const { userId } = useLocalSearchParams();
@@ -116,7 +116,7 @@ export default function VouchPage() {
         >
           <View style={styles.successCard}>
             <View style={styles.successIcon}>
-              <FontAwesome name="check-circle" size={64} color={PRIMARY_PINK} />
+              <FontAwesome name="check-circle" size={64} color={Colors.primary} />
             </View>
             <Text style={styles.successHeadline}>Thanks for being a good wingman.</Text>
             <Text style={styles.successSubtext}>
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '900',
     fontFamily: Typography.heading.fontFamily,
-    color: PRIMARY_PINK,
+    color: Colors.primary,
     letterSpacing: Typography.heading.letterSpacing,
     lineHeight: 40,
   },
@@ -304,12 +304,12 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: PRIMARY_PINK,
+    backgroundColor: Colors.primary,
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: PRIMARY_PINK,
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -330,8 +330,8 @@ const styles = StyleSheet.create({
     padding: 32,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: PRIMARY_PINK,
-    shadowColor: PRIMARY_PINK,
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -359,12 +359,12 @@ const styles = StyleSheet.create({
   },
   viralSection: {
     width: '100%',
-    backgroundColor: 'rgba(224, 83, 111, 0.05)',
+    backgroundColor: 'rgba(139, 74, 107, 0.08)', // Deep burgundy with 8% opacity
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(224, 83, 111, 0.2)',
+    borderColor: 'rgba(139, 74, 107, 0.2)', // Deep burgundy with 20% opacity
   },
   viralTitle: {
     fontSize: Typography.heading.fontSize.sm,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: PRIMARY_PINK,
+    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 24,

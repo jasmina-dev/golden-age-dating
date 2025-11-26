@@ -5,10 +5,12 @@ import { KindredUser } from '@/constants/UserData';
 
 const STORAGE_KEY = 'kindred_users';
 const CURRENT_USER_KEY = 'kindred_current_user';
+const REVEALED_PROFILES_KEY = 'kindred_revealed_profiles';
 
 // In-memory storage (mock)
 let userStorage: KindredUser[] = [];
 let currentUserId: string | null = null;
+let revealedProfiles: Set<string> = new Set();
 
 /**
  * Get all saved users
@@ -89,5 +91,37 @@ export const getCurrentUser = (): KindredUser | null => {
     return null;
   }
   return getUserById(currentUserId) || null;
+};
+
+/**
+ * Check if a profile has been revealed
+ */
+export const isProfileRevealed = (userId: string): boolean => {
+  return revealedProfiles.has(userId);
+};
+
+/**
+ * Mark a profile as revealed (one-way action)
+ */
+export const markProfileRevealed = (userId: string): void => {
+  revealedProfiles.add(userId);
+  // In a real app, this would save to AsyncStorage:
+  // const revealed = Array.from(revealedProfiles);
+  // await AsyncStorage.setItem(REVEALED_PROFILES_KEY, JSON.stringify(revealed));
+  console.log('Profile revealed:', userId);
+};
+
+/**
+ * Get all revealed profile IDs
+ */
+export const getRevealedProfiles = (): string[] => {
+  return Array.from(revealedProfiles);
+};
+
+/**
+ * Clear revealed profiles (for testing/reset)
+ */
+export const clearRevealedProfiles = (): void => {
+  revealedProfiles.clear();
 };
 

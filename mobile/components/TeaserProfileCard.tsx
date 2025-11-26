@@ -1,9 +1,12 @@
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { KindredUser } from '@/constants/UserData';
 import { getApprovedVouchesByUserId, Vouch } from '@/constants/Vouches';
+import { isProfileRevealed, markProfileRevealed } from '@/lib/storage';
+import { trackProfileReveal } from '@/lib/tracking';
 import { useState, useEffect } from 'react';
 
 interface TeaserProfileCardProps {
@@ -11,11 +14,13 @@ interface TeaserProfileCardProps {
   onReveal: () => void;
 }
 
-const BRAND_PINK = '#E0536F';
-const GOLD_COLOR = '#D4AF37';
+// Use Colors constants for consistency
+const BRAND_COLOR = Colors.gold; // Metallic muted gold
+const VOUCH_COLOR = Colors.gold; // Gold for vouched badges
 
 export default function TeaserProfileCard({ user, onReveal }: TeaserProfileCardProps) {
   const [vouch, setVouch] = useState<Vouch | null>(null);
+  const [isRevealed, setIsRevealed] = useState(false);
 
   useEffect(() => {
     // Get the first approved vouch for this user
@@ -23,11 +28,27 @@ export default function TeaserProfileCard({ user, onReveal }: TeaserProfileCardP
     if (vouches.length > 0) {
       setVouch(vouches[0]);
     }
+    
+    // Check if this profile has already been revealed (one-way reveal)
+    const revealed = isProfileRevealed(user.id);
+    setIsRevealed(revealed);
   }, [user.id]);
+
+  const handleReveal = () => {
+    // Track the high-intent Profile Reveal event
+    trackProfileReveal(user.id);
+    
+    // Mark profile as revealed (one-way action)
+    markProfileRevealed(user.id);
+    setIsRevealed(true);
+    
+    // Call the original onReveal handler (e.g., navigate to profile)
+    onReveal();
+  };
 
   return (
     <View style={styles.container}>
-      {/* Blurred Profile Image with Pink Overlay */}
+      {/* Profile Image - Blurred with vignette if not revealed, clear if revealed */}
       <View style={styles.imageSection}>
         {user.imageUrl ? (
           <>
@@ -36,25 +57,37 @@ export default function TeaserProfileCard({ user, onReveal }: TeaserProfileCardP
               style={styles.profileImage}
               resizeMode="cover"
             />
-            {/* Pink Overlay - Obscures the image */}
-            <View style={styles.pinkOverlay} />
+            {/* Blur Overlay - Only show if profile hasn't been revealed */}
+            {!isRevealed && (
+              <BlurView intensity={80} style={styles.blurOverlay}>
+                <View style={styles.blurContent} />
+              </BlurView>
+            )}
             {/* Verification Badge */}
             <View style={styles.verifiedBadge}>
-              <FontAwesome name="check-circle" size={20} color="#fff" />
+              <FontAwesome name="check-circle" size={20} color={Colors.gold} />
             </View>
           </>
         ) : (
-          <View style={styles.profileImagePlaceholder}>
-            <View style={styles.pinkOverlay} />
-          </View>
+          <View style={styles.profileImagePlaceholder} />
         )}
       </View>
 
-      {/* Metadata - Name, Age, Location */}
+      {/* Metadata - Name, Age, Location, Interests */}
       <View style={styles.metadataSection}>
         <Text style={styles.metadataText}>
           {user.name}, {user.age}, {user.location}
         </Text>
+        {/* Interests */}
+        {user.interests && user.interests.length > 0 && (
+          <View style={styles.interestsMetadata}>
+            {user.interests.slice(0, 3).map((interest, index) => (
+              <View key={index} style={styles.interestMetadataBadge}>
+                <Text style={styles.interestMetadataText}>{interest}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Vouch Card - Primary Content */}
@@ -62,7 +95,7 @@ export default function TeaserProfileCard({ user, onReveal }: TeaserProfileCardP
         <View style={styles.vouchCard}>
           <View style={styles.vouchHeader}>
             <View style={styles.vouchHeaderLeft}>
-              <FontAwesome name="check-circle" size={18} color={GOLD_COLOR} />
+              <FontAwesome name="check-circle" size={18} color={VOUCH_COLOR} />
               <Text style={styles.vouchFriendName}>
                 Vouched by {vouch.friendName}
               </Text>
@@ -87,30 +120,43 @@ export default function TeaserProfileCard({ user, onReveal }: TeaserProfileCardP
         </View>
       )}
 
-      {/* Reveal Button - Primary CTA */}
-      <TouchableOpacity
-        style={styles.revealButton}
-        onPress={onReveal}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.revealButtonText}>Reveal Photo & Profile</Text>
-        <FontAwesome name="arrow-right" size={18} color="#fff" />
-      </TouchableOpacity>
+      {/* Reveal Button - Primary CTA (only show if not revealed) */}
+      {!isRevealed ? (
+        <TouchableOpacity
+          style={styles.revealButton}
+          onPress={handleReveal}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.revealButtonText}>Reveal Photo & Profile</Text>
+          <FontAwesome name="unlock" size={18} color="#fff" />
+        </TouchableOpacity>
+      ) : (
+          <TouchableOpacity
+            style={styles.viewProfileButton}
+            onPress={onReveal}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.viewProfileButtonText}>View Full Profile</Text>
+            <FontAwesome name="arrow-right" size={18} color={BRAND_COLOR} />
+          </TouchableOpacity>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.card, // Dark espresso card background
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: Colors.gold, // Golden glow
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3, // Golden glow effect
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1.5,
+    borderColor: Colors.gold, // Thin gold border
   },
   imageSection: {
     width: '100%',
@@ -125,14 +171,17 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  pinkOverlay: {
+  blurOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: BRAND_PINK,
-    opacity: 0.85, // Semi-transparent pink overlay
+  },
+  blurContent: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   profileImagePlaceholder: {
     width: '100%',
@@ -144,10 +193,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     right: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 8,
     zIndex: 10,
+    borderWidth: 1,
+    borderColor: Colors.gold,
   },
   metadataSection: {
     marginBottom: 20,
@@ -159,16 +210,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.text,
     letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  interestsMetadata: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  interestMetadataBadge: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  interestMetadataText: {
+    fontSize: Typography.body.fontSize.xs,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '500',
+    color: Colors.text,
   },
   vouchCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Dark espresso card
     borderRadius: 20,
     padding: 20,
     borderWidth: 2,
-    borderColor: GOLD_COLOR,
-    shadowColor: GOLD_COLOR,
+    borderColor: VOUCH_COLOR, // Gold for vouched badges
+    shadowColor: VOUCH_COLOR,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 4,
     marginBottom: 20,
@@ -188,7 +260,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.sm,
     fontFamily: Typography.body.fontFamily,
     fontWeight: '700',
-    color: GOLD_COLOR,
+    color: VOUCH_COLOR, // Gold
   },
   vouchContent: {
     gap: 16,
@@ -212,7 +284,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   noVouchCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card, // Dark espresso card
     borderRadius: 20,
     padding: 20,
     borderWidth: 2,
@@ -232,12 +304,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    backgroundColor: BRAND_PINK,
+    backgroundColor: BRAND_COLOR, // Metallic muted gold
     borderRadius: 20,
     paddingVertical: 18,
-    shadowColor: BRAND_PINK,
+    shadowColor: BRAND_COLOR,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -245,7 +317,26 @@ const styles = StyleSheet.create({
     fontSize: Typography.body.fontSize.lg,
     fontFamily: Typography.body.fontFamily,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.background, // Dark brown text on gold
+    letterSpacing: 0.5,
+  },
+  viewProfileButton: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: BRAND_COLOR, // Metallic muted gold
+    borderRadius: 20,
+    paddingVertical: 18,
+  },
+  viewProfileButtonText: {
+    fontSize: Typography.body.fontSize.lg,
+    fontFamily: Typography.body.fontFamily,
+    fontWeight: '700',
+    color: BRAND_COLOR, // Metallic muted gold
     letterSpacing: 0.5,
   },
 });
